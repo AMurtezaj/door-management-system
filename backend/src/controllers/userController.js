@@ -2,6 +2,36 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 
 const userController = {
+    // Create first admin
+    createFirstAdmin: async (req, res) => {
+        try {
+            // Check if any admin exists
+            const adminExists = await User.findOne({ where: { roli: 'admin' } });
+            if (adminExists) {
+                return res.status(400).json({ message: 'Një administrator ekziston tashmë!' });
+            }
+
+            const { emri, mbiemri, email, password } = req.body;
+            
+            const existingUser = await User.findOne({ where: { email } });
+            if (existingUser) {
+                return res.status(400).json({ message: 'Email-i ekziston tashmë!' });
+            }
+
+            const user = await User.create({
+                emri,
+                mbiemri,
+                email,
+                password,
+                roli: 'admin' // Force role to be admin
+            });
+
+            res.status(201).json({ message: 'Administratori u krijua me sukses!' });
+        } catch (error) {
+            res.status(400).json({ message: 'Diçka shkoi keq!' });
+        }
+    },
+
     // Register new user (admin only)
     register: async (req, res) => {
         try {

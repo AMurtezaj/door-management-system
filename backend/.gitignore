@@ -46,4 +46,4 @@ temp/
 *.sqlite3
 
 # Debug
-.debug/ 
+.debug/
