@@ -29,11 +29,11 @@ const Order = sequelize.define('Order', {
     },
     matesi: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: true
     },
     dataMatjes: {
         type: DataTypes.DATE,
-        allowNull: false
+        allowNull: true
     },
     cmimiTotal: {
         type: DataTypes.DECIMAL(10, 2),
@@ -45,15 +45,16 @@ const Order = sequelize.define('Order', {
     },
     kaparja: {
         type: DataTypes.DECIMAL(10, 2),
-        allowNull: false
+        allowNull: false,
+        defaultValue: 0
     },
     menyraPageses: {
         type: DataTypes.ENUM('kesh', 'banke'),
         allowNull: false
     },
     dita: {
-        type: DataTypes.STRING,
-        allowNull: false
+        type: DataTypes.DATEONLY,
+        allowNull: true
     },
     tipiPorosise: {
         type: DataTypes.ENUM('derë garazhi', 'kapak', 'derë dhome'),
@@ -64,12 +65,8 @@ const Order = sequelize.define('Order', {
         allowNull: true
     },
     statusi: {
-        type: DataTypes.ENUM('e përfunduar', 'borxh', 'në proces'),
+        type: DataTypes.ENUM('në proces', 'e përfunduar', 'borxh'),
         defaultValue: 'në proces'
-    },
-    dataPerfundimit: {
-        type: DataTypes.DATE,
-        allowNull: true
     },
     eshtePrintuar: {
         type: DataTypes.BOOLEAN,
@@ -79,10 +76,15 @@ const Order = sequelize.define('Order', {
         type: DataTypes.BOOLEAN,
         defaultValue: false
     },
-    dataNjoftimit: {
-        type: DataTypes.DATE,
-        allowNull: true
+    statusiMatjes: {
+        type: DataTypes.ENUM('e pamatur', 'e matur'),
+        defaultValue: 'e pamatur'
     }
 });
+
+// Add association with Notification model
+const Notification = require('./Notification');
+Order.hasMany(Notification, { foreignKey: 'orderId' });
+Notification.belongsTo(Order, { foreignKey: 'orderId' });
 
 module.exports = Order; 

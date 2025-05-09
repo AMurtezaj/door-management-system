@@ -1,5 +1,6 @@
 const Payment = require('../models/Payment');
 const Order = require('../models/Order');
+const User = require('../models/User');
 
 const paymentController = {
     // Create new payment
@@ -97,12 +98,28 @@ const paymentController = {
         }
     },
 
-    // Delete payment
+    // Delete payment (admin only)
     deletePayment: async (req, res) => {
         try {
+            // Check if user is admin
+            const user = await User.findByPk(req.user.id);
+            if (!user || user.roli !== 'admin') {
+                return res.status(403).json({ message: 'Nuk keni të drejta për të fshirë pagesat!' });
+            }
+
             const payment = await Payment.findByPk(req.params.id);
             if (!payment) {
                 return res.status(404).json({ message: 'Pagesa nuk u gjet!' });
+            }
+
+            // Update order's remaining payment
+            const order = await Order.findByPk(payment.orderId);
+            if (order) {
+                const newPagesaMbetur = order.pagesaMbetur + payment.shuma;
+                await order.update({
+                    pagesaMbetur: newPagesaMbetur,
+                    statusi: newPagesaMbetur > 0 ? 'borxh' : 'e përfunduar'
+                });
             }
 
             await payment.destroy();

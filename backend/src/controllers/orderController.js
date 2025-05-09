@@ -1,5 +1,6 @@
 const Order = require('../models/Order');
 const DailyCapacity = require('../models/DailyCapacity');
+const notificationController = require('./notificationController');
 
 const orderController = {
     // Create new order
@@ -21,6 +22,10 @@ const orderController = {
                 tipiPorosise,
                 pershkrimi
             } = req.body;
+
+            if (!dita) {
+                return res.status(400).json({ message: 'Dita e realizimit është e detyrueshme!' });
+            }
 
             // Check daily capacity
             const capacity = await DailyCapacity.findOne({ where: { dita } });
@@ -58,7 +63,8 @@ const orderController = {
                 dita,
                 tipiPorosise,
                 pershkrimi,
-                statusi: 'në proces'
+                statusi: 'në proces',
+                statusiMatjes: 'e pamatur'
             });
 
             res.status(201).json(order);
@@ -113,11 +119,6 @@ const orderController = {
                 return res.status(404).json({ message: 'Porosia nuk u gjet!' });
             }
 
-            // If order is being marked as completed
-            if (req.body.statusi === 'e përfunduar') {
-                req.body.dataPerfundimit = new Date();
-            }
-
             await order.update(req.body);
             res.json(order);
         } catch (error) {
@@ -125,54 +126,35 @@ const orderController = {
         }
     },
 
-    // Mark order as printed
-    markAsPrinted: async (req, res) => {
+    // Update measurement status
+    updateMeasurementStatus: async (req, res) => {
         try {
-            const order = await Order.findByPk(req.params.id);
+            const { id } = req.params;
+            const { statusiMatjes, matesi, dataMatjes } = req.body;
+
+            const order = await Order.findByPk(id);
             if (!order) {
                 return res.status(404).json({ message: 'Porosia nuk u gjet!' });
             }
 
-            await order.update({ eshtePrintuar: true });
-            res.json(order);
-        } catch (error) {
-            res.status(400).json({ message: 'Diçka shkoi keq!' });
-        }
-    },
-
-    // Mark order with seal
-    markWithSeal: async (req, res) => {
-        try {
-            const order = await Order.findByPk(req.params.id);
-            if (!order) {
-                return res.status(404).json({ message: 'Porosia nuk u gjet!' });
-            }
-
-            await order.update({ kaVule: true });
-            res.json(order);
-        } catch (error) {
-            res.status(400).json({ message: 'Diçka shkoi keq!' });
-        }
-    },
-
-    // Get orders by status
-    getOrdersByStatus: async (req, res) => {
-        try {
-            const orders = await Order.findAll({
-                where: { statusi: req.params.statusi },
-                order: [['createdAt', 'DESC']]
+            await order.update({
+                statusiMatjes,
+                matesi: matesi || order.matesi,
+                dataMatjes: dataMatjes || new Date()
             });
-            res.json(orders);
+
+            res.json(order);
         } catch (error) {
             res.status(400).json({ message: 'Diçka shkoi keq!' });
         }
     },
 
-    // Get orders by payment type
-    getOrdersByPaymentType: async (req, res) => {
+    // Get orders by measurement status
+    getOrdersByMeasurementStatus: async (req, res) => {
         try {
+            const { statusiMatjes } = req.params;
             const orders = await Order.findAll({
-                where: { menyraPageses: req.params.menyraPageses },
+                where: { statusiMatjes },
                 order: [['createdAt', 'DESC']]
             });
             res.json(orders);

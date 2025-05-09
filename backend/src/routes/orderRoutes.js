@@ -18,19 +18,11 @@ router.get('/:id', auth, orderController.getOrderById);
 // Update order
 router.put('/:id', auth, orderController.updateOrder);
 
-// Mark order as printed
-router.put('/:id/print', auth, orderController.markAsPrinted);
-
-// Mark order with seal
-router.put('/:id/seal', auth, orderController.markWithSeal);
-
-// Get orders by status
-router.get('/status/:statusi', auth, orderController.getOrdersByStatus);
-
-// Get orders by payment type
-router.get('/payment/:menyraPageses', auth, orderController.getOrdersByPaymentType);
-
 // Delete order (admin only)
 router.delete('/:id', auth, isAdmin, orderController.deleteOrder);
+
+// Measurement status routes
+router.put('/:id/measurement', auth, orderController.updateMeasurementStatus);
+router.get('/measurement/:statusiMatjes', auth, orderController.getOrdersByMeasurementStatus);
 
 module.exports = router; 
