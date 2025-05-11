@@ -12,4 +12,9 @@ router.post('/login', userController.login);
 router.get('/me', auth, userController.getCurrentUser);
 router.get('/', auth, isAdmin, userController.getAllUsers);
 
+// New routes for user management
+router.get('/:id', auth, isAdmin, userController.getUserById);
+router.put('/:id', auth, isAdmin, userController.updateUser);
+router.delete('/:id', auth, isAdmin, userController.deleteUser);
+
 module.exports = router; 

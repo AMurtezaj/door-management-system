@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import UserList from '../components/users/UserList';
 import UserForm from '../components/users/UserForm';
-import { shtoPerdorues, merrPerdoruesit, perditesoPerdorues } from '../services/userService';
-import { Button, Box, Snackbar, Alert, CircularProgress } from '@mui/material';
+import { createUser, merrPerdoruesit, updateUser } from '../services/userService';
+import { Button, Box, Snackbar, Alert, CircularProgress, Typography } from '@mui/material';
+import { Add, Close } from '@mui/icons-material';
 
 const UsersPage = () => {
   const [showForm, setShowForm] = useState(false);
@@ -12,79 +13,101 @@ const UsersPage = () => {
   const [editUser, setEditUser] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      setLoading(true);
-      try {
-        const data = await merrPerdoruesit();
-        setPerdoruesit(data);
-        setLoading(false);
-      } catch (err) {
-        console.error('Failed to load users:', err);
-        setError('Nuk u ngarkuan përdoruesit! Kontrolloni lidhjen me serverin.');
-        setLoading(false);
-      }
-    };
-    fetchUsers();
-  }, []);
-
-  const handleAddUser = async (teDhenat) => {
+  const fetchUsers = async () => {
     setLoading(true);
     try {
-      await shtoPerdorues(teDhenat);
-      setSuccess('Përdoruesi u shtua me sukses!');
-      setShowForm(false);
       const data = await merrPerdoruesit();
+      console.log('Users data:', data);
       setPerdoruesit(data);
-      setLoading(false);
     } catch (err) {
-      console.error('Failed to add user:', err);
-      setError('Shtimi dështoi! Kontrolloni lidhjen me serverin.');
+      console.error('Failed to load users:', err);
+      setError(err.response?.data?.message || 'Nuk u ngarkuan përdoruesit! Kontrolloni lidhjen me serverin.');
+    } finally {
       setLoading(false);
     }
   };
 
-  const handleEditUser = async (teDhenat) => {
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const handleAddUser = async (userData) => {
     setLoading(true);
     try {
-      await perditesoPerdorues(editUser.id, teDhenat);
+      console.log('Adding new user:', userData);
+      await createUser(userData);
+      setSuccess('Përdoruesi u shtua me sukses!');
+      setShowForm(false);
+      await fetchUsers();
+    } catch (err) {
+      console.error('Failed to add user:', err);
+      setError(err.response?.data?.message || 'Shtimi dështoi! Kontrolloni lidhjen me serverin.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditUser = async (userData) => {
+    setLoading(true);
+    try {
+      console.log('Updating user:', userData);
+      await updateUser(editUser.id, userData);
       setSuccess('Përdoruesi u përditësua me sukses!');
       setEditUser(null);
       setShowForm(false);
-      const data = await merrPerdoruesit();
-      setPerdoruesit(data);
-      setLoading(false);
+      await fetchUsers();
     } catch (err) {
       console.error('Failed to update user:', err);
-      setError('Përditësimi dështoi! Kontrolloni lidhjen me serverin.');
+      setError(err.response?.data?.message || 'Përditësimi dështoi! Kontrolloni lidhjen me serverin.');
+    } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCloseSnackbar = (type) => {
+    if (type === 'error') {
+      setError('');
+    } else {
+      setSuccess('');
     }
   };
 
   return (
     <Box sx={{ maxWidth: 1000, mx: 'auto', mt: 4 }}>
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={() => { setShowForm(!showForm); setEditUser(null); }}
-        sx={{ mb: 2 }}
-        disabled={loading}
-      >
-        {showForm ? 'Mbyll Formën' : 'Shto Përdorues të Ri'}
-      </Button>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+        <Typography variant="h4" component="h1">
+          Menaxhimi i Përdoruesve
+        </Typography>
+        
+        <Button
+          variant="contained"
+          color={showForm ? "secondary" : "primary"}
+          onClick={() => { setShowForm(!showForm); setEditUser(null); }}
+          disabled={loading}
+          startIcon={showForm ? <Close /> : <Add />}
+        >
+          {showForm ? 'Mbyll Formën' : 'Shto Përdorues të Ri'}
+        </Button>
+      </Box>
       
-      {loading && (
+      {loading && !showForm && !editUser && (
         <Box display="flex" justifyContent="center" my={3}>
           <CircularProgress />
         </Box>
       )}
       
       {(showForm || editUser) && (
-        <UserForm
-          onSubmit={editUser ? handleEditUser : handleAddUser}
-          defaultValues={editUser || {}}
-          isEdit={!!editUser}
-        />
+        <Box sx={{ mb: 4, p: 3, bgcolor: 'background.paper', borderRadius: 2, boxShadow: 2 }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>
+            {editUser ? 'Përditëso Përdoruesin' : 'Shto Përdorues të Ri'}
+          </Typography>
+          <UserForm
+            onSubmit={editUser ? handleEditUser : handleAddUser}
+            defaultValues={editUser || {}}
+            isEdit={!!editUser}
+            loading={loading}
+          />
+        </Box>
       )}
       
       <UserList
@@ -96,19 +119,19 @@ const UsersPage = () => {
       <Snackbar 
         open={!!error} 
         autoHideDuration={4000} 
-        onClose={() => setError('')}
+        onClose={() => handleCloseSnackbar('error')}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert severity="error" onClose={() => setError('')}>{error}</Alert>
+        <Alert severity="error" onClose={() => handleCloseSnackbar('error')}>{error}</Alert>
       </Snackbar>
       
       <Snackbar 
         open={!!success} 
         autoHideDuration={4000} 
-        onClose={() => setSuccess('')}
+        onClose={() => handleCloseSnackbar('success')}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert severity="success" onClose={() => setSuccess('')}>{success}</Alert>
+        <Alert severity="success" onClose={() => handleCloseSnackbar('success')}>{success}</Alert>
       </Snackbar>
     </Box>
   );

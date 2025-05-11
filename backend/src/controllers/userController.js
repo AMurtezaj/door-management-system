@@ -116,6 +116,103 @@ const userController = {
             console.error('Error fetching users:', error);
             res.status(500).json({ message: 'Diçka shkoi keq gjatë marrjes së përdoruesve!' });
         }
+    },
+
+    // Update a user (admin only)
+    updateUser: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { emri, mbiemri, email, roli } = req.body;
+            
+            // Check if user exists
+            const user = await User.findByPk(id);
+            if (!user) {
+                return res.status(404).json({ message: 'Përdoruesi nuk u gjet!' });
+            }
+            
+            // If email is being changed, check if the new email already exists
+            if (email && email !== user.email) {
+                const existingUser = await User.findOne({ where: { email } });
+                if (existingUser) {
+                    return res.status(400).json({ message: 'Email-i ekziston tashmë!' });
+                }
+            }
+            
+            // Update user fields
+            if (emri) user.emri = emri;
+            if (mbiemri) user.mbiemri = mbiemri;
+            if (email) user.email = email;
+            if (roli) user.roli = roli;
+            
+            // If password is included, it will be handled by the model hooks
+            if (req.body.password) {
+                user.password = req.body.password;
+            }
+            
+            await user.save();
+            
+            // Return updated user without password
+            const updatedUser = await User.findByPk(id, {
+                attributes: { exclude: ['password'] }
+            });
+            
+            res.json({
+                message: 'Përdoruesi u përditësua me sukses!',
+                user: updatedUser
+            });
+        } catch (error) {
+            console.error('Error updating user:', error);
+            res.status(500).json({ message: 'Diçka shkoi keq gjatë përditësimit të përdoruesit!' });
+        }
+    },
+    
+    // Delete a user (admin only)
+    deleteUser: async (req, res) => {
+        try {
+            const { id } = req.params;
+            
+            // Check if user exists
+            const user = await User.findByPk(id);
+            if (!user) {
+                return res.status(404).json({ message: 'Përdoruesi nuk u gjet!' });
+            }
+            
+            // Prevent deleting the last admin
+            if (user.roli === 'admin') {
+                const adminCount = await User.count({ where: { roli: 'admin' } });
+                if (adminCount <= 1) {
+                    return res.status(400).json({ message: 'Nuk mund të fshihet administratori i fundit!' });
+                }
+            }
+            
+            // Delete user
+            await user.destroy();
+            
+            res.json({ message: 'Përdoruesi u fshi me sukses!' });
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            res.status(500).json({ message: 'Diçka shkoi keq gjatë fshirjes së përdoruesit!' });
+        }
+    },
+
+    // Get user by ID (admin only)
+    getUserById: async (req, res) => {
+        try {
+            const { id } = req.params;
+            
+            const user = await User.findByPk(id, {
+                attributes: { exclude: ['password'] }
+            });
+            
+            if (!user) {
+                return res.status(404).json({ message: 'Përdoruesi nuk u gjet!' });
+            }
+            
+            res.json(user);
+        } catch (error) {
+            console.error('Error fetching user:', error);
+            res.status(500).json({ message: 'Diçka shkoi keq gjatë marrjes së përdoruesit!' });
+        }
     }
 };
 
