@@ -102,6 +102,20 @@ const userController = {
         } catch (error) {
             res.status(400).json({ message: 'Diçka shkoi keq!' });
         }
+    },
+    
+    // Get all users (admin only)
+    getAllUsers: async (req, res) => {
+        try {
+            const users = await User.findAll({
+                attributes: { exclude: ['password'] },
+                order: [['createdAt', 'DESC']]
+            });
+            res.json(users);
+        } catch (error) {
+            console.error('Error fetching users:', error);
+            res.status(500).json({ message: 'Diçka shkoi keq gjatë marrjes së përdoruesve!' });
+        }
     }
 };
 

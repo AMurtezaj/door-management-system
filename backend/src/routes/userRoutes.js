@@ -10,5 +10,6 @@ router.post('/first-admin', userController.createFirstAdmin);
 router.post('/register', auth, isAdmin, userController.register);
 router.post('/login', userController.login);
 router.get('/me', auth, userController.getCurrentUser);
+router.get('/', auth, isAdmin, userController.getAllUsers);
 
 module.exports = router; 
