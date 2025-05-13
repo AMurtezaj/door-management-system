@@ -12,13 +12,12 @@ app.use(express.json());
 // Routes
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/orders", require("./routes/orderRoutes"));
-app.use("/api/payments", require("./routes/paymentRoutes"));
 app.use("/api/capacity", require("./routes/capacityRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
 
 // Add a root route
 app.get('/', (req, res) => {
-  res.json({ message: 'Welcome to the Lindidoors API! Use /api/users, /api/orders, /api/payments, /api/capacity, or /api/notifications to access the API endpoints.' });
+  res.json({ message: 'Welcome to the Lindidoors API! Use /api/users, /api/orders, /api/capacity, or /api/notifications to access the API endpoints.' });
 });
 
 // 404 handler - only handle routes that weren't matched above
@@ -29,37 +28,25 @@ app.use((req, res, next) => {
 // Error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ message: 'Server error', error: err.message });
+  res.status(500).json({ message: 'Internal server error' });
 });
 
 const PORT = process.env.PORT || 5000;
 
-// Start server
-(async () => {
+const startServer = async () => {
   try {
-    console.log('Attempting to connect to database...');
-    console.log('Database config:', {
-      database: process.env.DB_NAME,
-      user: process.env.DB_USER,
-      host: process.env.DB_HOST,
-      port: process.env.DB_PORT
-    });
+    await connectPostgres();
     
-    await connectPostgres(); // test the connection
-    console.log('Database connection successful, syncing models...');
-    
-    await sequelize.sync({ alter: true }); // sync models to DB
-    console.log('Models synced successfully');
+    // Sync models with database
+    await sequelize.sync();
     
     app.listen(PORT, () => {
-      console.log(`Serveri është duke punuar në http://localhost:${PORT}`);
+      console.log(`Server running on port ${PORT}`);
     });
   } catch (error) {
-    console.error("Gabim në startimin e serverit:", error);
-    console.error("Error details:", {
-      message: error.message,
-      stack: error.stack
-    });
+    console.error("Unable to start server:", error);
     process.exit(1);
   }
-})();
+};
+
+startServer();
