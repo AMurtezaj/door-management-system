@@ -61,34 +61,52 @@ const userController = {
         try {
             const { email, password } = req.body;
             
+            console.log('Login attempt for:', email);
+            
             const user = await User.findOne({ where: { email } });
             if (!user) {
+                console.log('Login failed: User not found with email', email);
                 return res.status(401).json({ message: 'Email ose fjalëkalimi i gabuar!' });
             }
 
             const isValidPassword = await user.validPassword(password);
             if (!isValidPassword) {
+                console.log('Login failed: Invalid password for user', email);
                 return res.status(401).json({ message: 'Email ose fjalëkalimi i gabuar!' });
             }
 
-            const token = jwt.sign(
-                { id: user.id, roli: user.roli },
-                process.env.JWT_SECRET,
-                { expiresIn: '24h' }
-            );
+            // Make sure JWT_SECRET is available
+            if (!process.env.JWT_SECRET) {
+                console.error('JWT_SECRET is not defined in environment variables');
+                return res.status(500).json({ message: 'Server configuration error' });
+            }
 
-            res.json({
-                token,
-                user: {
-                    id: user.id,
-                    emri: user.emri,
-                    mbiemri: user.mbiemri,
-                    email: user.email,
-                    roli: user.roli
-                }
-            });
+            try {
+                const token = jwt.sign(
+                    { id: user.id, roli: user.roli },
+                    process.env.JWT_SECRET,
+                    { expiresIn: '24h' }
+                );
+                
+                console.log('Login successful for user:', email);
+                
+                res.json({
+                    token,
+                    user: {
+                        id: user.id,
+                        emri: user.emri,
+                        mbiemri: user.mbiemri,
+                        email: user.email,
+                        roli: user.roli
+                    }
+                });
+            } catch (jwtError) {
+                console.error('JWT signing error:', jwtError);
+                return res.status(500).json({ message: 'Failed to generate authentication token' });
+            }
         } catch (error) {
-            res.status(400).json({ message: 'Diçka shkoi keq!' });
+            console.error('Login error:', error);
+            res.status(500).json({ message: 'Diçka shkoi keq!' });
         }
     },
 
