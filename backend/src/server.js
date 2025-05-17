@@ -19,12 +19,12 @@ app.use(express.json());
 // Routes - notice these all include /api prefix to match frontend expectations
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/orders", require("./routes/orderRoutes"));
-app.use("/api/capacity", require("./routes/capacityRoutes"));
+app.use("/api/capacities", require("./routes/capacityRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
 
 // Add a root route
 app.get('/', (req, res) => {
-  res.json({ message: 'Welcome to the Lindidoors API! Use /api/users, /api/orders, /api/capacity, or /api/notifications to access the API endpoints.' });
+  res.json({ message: 'Welcome to the Lindidoors API! Use /api/users, /api/orders, /api/capacities, or /api/notifications to access the API endpoints.' });
 });
 
 // 404 handler - only handle routes that weren't matched above
@@ -38,7 +38,7 @@ app.use((err, req, res, next) => {
   res.status(500).json({ message: 'Internal server error' });
 });
 
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 3000;
 
 const startServer = async () => {
   try {

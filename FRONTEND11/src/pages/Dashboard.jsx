@@ -1,27 +1,48 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Badge, Table, Spinner } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
+import { Row, Col, Card, Badge, Table, Spinner, Alert, Button } from 'react-bootstrap';
+import { Link, useNavigate } from 'react-router-dom';
 import { 
   DoorOpen, DoorClosed, LockFill, ExclamationTriangleFill,
-  PeopleFill, ClockHistory, Bell
+  PeopleFill, ClockHistory, Bell, Calendar3
 } from 'react-bootstrap-icons';
 import { getAllDoors } from '../services/doorService';
 import { getAllNotifications } from '../services/notificationService';
+import { getAllOrders, getDebtStatistics } from '../services/orderService';
 import { useAuth } from '../context/AuthContext';
+import CapacityCalendar from '../components/orders/CapacityCalendar';
 import './Dashboard.css';
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
   const [doors, setDoors] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [debtStats, setDebtStats] = useState({
+    cashDebtCount: 0,
+    bankDebtCount: 0,
+    totalDebtCount: 0,
+    totalCashDebt: 0,
+    totalBankDebt: 0,
+    totalDebt: 0
+  });
   const [doorsLoading, setDoorsLoading] = useState(true);
   const [notificationsLoading, setNotificationsLoading] = useState(true);
+  const [ordersLoading, setOrdersLoading] = useState(true);
   
   // Fetch dashboard data on component mount
   useEffect(() => {
-    fetchDoors();
-    fetchNotifications();
-  }, []);
+    if (isAuthenticated) {
+      fetchDoors();
+      fetchNotifications();
+      fetchOrders();
+      fetchDebtStats();
+    } else {
+      setDoorsLoading(false);
+      setNotificationsLoading(false);
+      setOrdersLoading(false);
+    }
+  }, [isAuthenticated]);
   
   // Fetch all doors
   const fetchDoors = async () => {
@@ -47,6 +68,29 @@ const Dashboard = () => {
     }
   };
   
+  // Fetch recent orders
+  const fetchOrders = async () => {
+    try {
+      setOrdersLoading(true);
+      const data = await getAllOrders();
+      setOrders(data.slice(0, 5)); // Get only the 5 most recent
+      setOrdersLoading(false);
+    } catch (error) {
+      console.error('Error fetching orders:', error);
+      setOrdersLoading(false);
+    }
+  };
+  
+  // Fetch debt statistics
+  const fetchDebtStats = async () => {
+    try {
+      const data = await getDebtStatistics();
+      setDebtStats(data);
+    } catch (error) {
+      console.error('Error fetching debt statistics:', error);
+    }
+  };
+  
   // Calculate door statistics
   const doorStats = {
     total: doors.length,
@@ -56,8 +100,8 @@ const Dashboard = () => {
     alarm: doors.filter(door => door.status === 'alarm').length
   };
   
-  // Get status badge
-  const getStatusBadge = (status) => {
+  // Get door status badge
+  const getDoorStatusBadge = (status) => {
     switch (status) {
       case 'open':
         return <Badge bg="success">Open <DoorOpen className="ms-1" /></Badge>;
@@ -71,13 +115,45 @@ const Dashboard = () => {
         return <Badge bg="secondary">{status}</Badge>;
     }
   };
+  
+  // Get order status badge
+  const getOrderStatusBadge = (status) => {
+    switch (status) {
+      case 'në proces':
+        return <Badge bg="warning">Në Proces</Badge>;
+      case 'e përfunduar':
+        return <Badge bg="success">E Përfunduar</Badge>;
+      case 'borxh':
+        return <Badge bg="danger">Borxh</Badge>;
+      default:
+        return <Badge bg="secondary">{status}</Badge>;
+    }
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="dashboard">
+        <Card>
+          <Card.Body className="text-center p-5">
+            <h3>Mirë se vini në Sistemin e Menaxhimit të Dyerve</h3>
+            <Alert variant="info" className="my-4">
+              Ju duhet të jeni të loguar për të parë përmbajtjen e panelit kryesor.
+            </Alert>
+            <Button onClick={() => navigate('/login')} size="lg" variant="primary">
+              Logohu tani
+            </Button>
+          </Card.Body>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="dashboard">
       <div className="d-flex justify-content-between align-items-center mb-4">
         <h3>Dashboard</h3>
         <div className="text-muted">
-          Welcome back, {user?.emri} {user?.mbiemri}
+          Mirë se vini, {user?.emri} {user?.mbiemri}
         </div>
       </div>
       
@@ -89,8 +165,22 @@ const Dashboard = () => {
                 <DoorOpen size={24} />
               </div>
               <div className="ms-3">
-                <h6 className="stat-label">Open Doors</h6>
-                <h4 className="stat-value text-primary">{doorStats.open}</h4>
+                <h6 className="stat-label">Porosi Totale</h6>
+                <h4 className="stat-value text-primary">{orders.length}</h4>
+              </div>
+            </Card.Body>
+          </Card>
+        </Col>
+        
+        <Col md={3} className="mb-3 mb-md-0">
+          <Card className="dashboard-stat-card shadow-sm h-100">
+            <Card.Body className="d-flex align-items-center">
+              <div className="stat-icon bg-light-warning text-warning">
+                <ClockHistory size={24} />
+              </div>
+              <div className="ms-3">
+                <h6 className="stat-label">Borxhe (Kesh)</h6>
+                <h4 className="stat-value text-warning">{debtStats.cashDebtCount}</h4>
               </div>
             </Card.Body>
           </Card>
@@ -100,25 +190,11 @@ const Dashboard = () => {
           <Card className="dashboard-stat-card shadow-sm h-100">
             <Card.Body className="d-flex align-items-center">
               <div className="stat-icon bg-light-info text-info">
-                <DoorClosed size={24} />
+                <PeopleFill size={24} />
               </div>
               <div className="ms-3">
-                <h6 className="stat-label">Closed Doors</h6>
-                <h4 className="stat-value text-info">{doorStats.closed}</h4>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-        
-        <Col md={3} className="mb-3 mb-md-0">
-          <Card className="dashboard-stat-card shadow-sm h-100">
-            <Card.Body className="d-flex align-items-center">
-              <div className="stat-icon bg-light-primary text-primary">
-                <LockFill size={24} />
-              </div>
-              <div className="ms-3">
-                <h6 className="stat-label">Locked Doors</h6>
-                <h4 className="stat-value">{doorStats.locked}</h4>
+                <h6 className="stat-label">Borxhe (Bankë)</h6>
+                <h4 className="stat-value">{debtStats.bankDebtCount}</h4>
               </div>
             </Card.Body>
           </Card>
@@ -131,8 +207,8 @@ const Dashboard = () => {
                 <ExclamationTriangleFill size={24} />
               </div>
               <div className="ms-3">
-                <h6 className="stat-label">Doors in Alarm</h6>
-                <h4 className="stat-value text-danger">{doorStats.alarm}</h4>
+                <h6 className="stat-label">Borxhe Totale</h6>
+                <h4 className="stat-value text-danger">{debtStats.totalDebtCount}</h4>
               </div>
             </Card.Body>
           </Card>
@@ -140,101 +216,57 @@ const Dashboard = () => {
       </Row>
       
       <Row>
-        <Col lg={8} className="mb-4 mb-lg-0">
+        <Col lg={7} className="mb-4">
+          <CapacityCalendar />
+        </Col>
+        
+        <Col lg={5} className="mb-4">
           <Card className="shadow-sm h-100">
             <Card.Header className="bg-white d-flex justify-content-between align-items-center py-3">
               <div className="d-flex align-items-center">
-                <DoorClosed className="me-2" />
-                <h5 className="mb-0">Recent Door Activities</h5>
+                <Calendar3 className="me-2" />
+                <h5 className="mb-0">Porositë e Fundit</h5>
               </div>
-              <Link to="/doors" className="btn btn-sm btn-outline-primary">
-                View All
+              <Link to="/orders" className="btn btn-sm btn-outline-primary">
+                Shiko Të Gjitha
               </Link>
             </Card.Header>
             <Card.Body className="p-0">
-              {doorsLoading ? (
+              {ordersLoading ? (
                 <div className="text-center p-4">
                   <Spinner animation="border" role="status" />
-                  <p className="mt-2 text-muted">Loading doors...</p>
+                  <p className="mt-2 text-muted">Duke ngarkuar porositë...</p>
                 </div>
-              ) : doors.length === 0 ? (
+              ) : orders.length === 0 ? (
                 <div className="text-center p-4">
-                  <p className="text-muted">No doors found.</p>
+                  <p className="text-muted">Nuk u gjetën porosi.</p>
                 </div>
               ) : (
                 <div className="table-responsive">
                   <Table hover className="mb-0">
                     <thead className="table-light">
                       <tr>
-                        <th>Door</th>
-                        <th>Location</th>
-                        <th>Status</th>
-                        <th>Last Activity</th>
+                        <th>Klienti</th>
+                        <th>Tipi</th>
+                        <th>Çmimi</th>
+                        <th>Statusi</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {doors.slice(0, 7).map(door => (
-                        <tr key={door.id}>
+                      {orders.map(order => (
+                        <tr key={order.id}>
                           <td>
-                            <Link to={`/doors/${door.id}`} className="text-decoration-none">
-                              {door.name}
+                            <Link to={`/orders/edit/${order.id}`} className="text-decoration-none">
+                              {order.emriKlientit} {order.mbiemriKlientit}
                             </Link>
                           </td>
-                          <td>{door.location}</td>
-                          <td>{getStatusBadge(door.status)}</td>
-                          <td>{new Date(door.lastActivity).toLocaleString()}</td>
+                          <td>{order.tipiPorosise}</td>
+                          <td>{parseFloat(order.cmimiTotal).toFixed(2)} €</td>
+                          <td>{getOrderStatusBadge(order.statusi)}</td>
                         </tr>
                       ))}
                     </tbody>
                   </Table>
-                </div>
-              )}
-            </Card.Body>
-          </Card>
-        </Col>
-        
-        <Col lg={4}>
-          <Card className="shadow-sm h-100">
-            <Card.Header className="bg-white d-flex justify-content-between align-items-center py-3">
-              <div className="d-flex align-items-center">
-                <Bell className="me-2" />
-                <h5 className="mb-0">Recent Notifications</h5>
-              </div>
-              <Link to="/notifications" className="btn btn-sm btn-outline-primary">
-                View All
-              </Link>
-            </Card.Header>
-            <Card.Body className="p-0">
-              {notificationsLoading ? (
-                <div className="text-center p-4">
-                  <Spinner animation="border" role="status" />
-                  <p className="mt-2 text-muted">Loading notifications...</p>
-                </div>
-              ) : notifications.length === 0 ? (
-                <div className="text-center p-4">
-                  <p className="text-muted">No notifications found.</p>
-                </div>
-              ) : (
-                <div className="notification-list">
-                  {notifications.map(notification => (
-                    <div key={notification.id} className={`notification-item p-3 border-bottom ${!notification.read ? 'unread' : ''}`}>
-                      <div className="d-flex">
-                        <div className="notification-icon me-3">
-                          {notification.type === 'door' && <DoorClosed className="text-primary" />}
-                          {notification.type === 'access' && <PeopleFill className="text-warning" />}
-                          {notification.type === 'alert' && <ExclamationTriangleFill className="text-danger" />}
-                          {notification.type === 'system' && <ClockHistory className="text-info" />}
-                        </div>
-                        <div>
-                          <div className="notification-title fw-bold">{notification.title}</div>
-                          <div className="notification-text text-muted">{notification.message}</div>
-                          <div className="notification-time small text-muted mt-1">
-                            {new Date(notification.createdAt).toLocaleString()}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               )}
             </Card.Body>

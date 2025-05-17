@@ -10,7 +10,11 @@ import {
   Gear,
   ClockHistory,
   ShieldLock,
-  Person
+  Person,
+  Cart,
+  Calendar3,
+  CurrencyExchange,
+  Rulers
 } from 'react-bootstrap-icons';
 import './Sidebar.css';
 
@@ -27,47 +31,53 @@ const Sidebar = ({ show, onHide }) => {
       roles: ['admin', 'menaxher'] 
     },
     { 
-      path: '/doors', 
-      label: 'Doors', 
-      icon: <DoorClosed size={20} />, 
+      path: '/orders', 
+      label: 'Porositë', 
+      icon: <Cart size={20} />, 
+      roles: ['admin', 'menaxher'] 
+    },
+    { 
+      path: '/orders/capacity', 
+      label: 'Kapacitetet', 
+      icon: <Calendar3 size={20} />, 
       roles: ['admin', 'menaxher'] 
     },
     {
+      path: '/debt-management',
+      label: 'Menaxhimi i Borxheve',
+      icon: <CurrencyExchange size={20} />,
+      roles: ['admin', 'menaxher']
+    },
+    {
+      path: '/measurement-status',
+      label: 'Statusi i Matjeve',
+      icon: <Rulers size={20} />,
+      roles: ['admin', 'menaxher']
+    },
+    {
       path: '/profile',
-      label: 'My Profile',
+      label: 'Profili Im',
       icon: <Person size={20} />,
       roles: ['admin', 'menaxher']
     },
     { 
-      path: '/access', 
-      label: 'Access Control', 
-      icon: <ShieldLock size={20} />, 
-      roles: ['admin'] 
-    },
-    { 
       path: '/users', 
-      label: 'User Management', 
+      label: 'Menaxhimi i Përdoruesve', 
       icon: <People size={20} />, 
       roles: ['admin'] 
     },
     { 
       path: '/logs', 
-      label: 'Activity Logs', 
+      label: 'Regjistrimet e Aktivitetit', 
       icon: <ClockHistory size={20} />, 
       roles: ['admin', 'menaxher'] 
     },
     { 
       path: '/notifications', 
-      label: 'Notifications', 
+      label: 'Njoftimet', 
       icon: <Bell size={20} />, 
       roles: ['admin', 'menaxher'] 
     },
-    { 
-      path: '/settings', 
-      label: 'Settings', 
-      icon: <Gear size={20} />, 
-      roles: ['admin'] 
-    }
   ];
   
   // Filter nav items based on user role
@@ -78,7 +88,7 @@ const Sidebar = ({ show, onHide }) => {
   return (
     <div className={`sidebar bg-dark text-white ${show ? 'show' : ''}`}>
       <div className="sidebar-header p-3 d-flex align-items-center justify-content-center border-bottom">
-        <h4 className="m-0">Door Management</h4>
+        <h4 className="m-0">Sistemi i Porosive</h4>
       </div>
       
       <div className="sidebar-user p-3 text-center border-bottom">
@@ -110,7 +120,7 @@ const Sidebar = ({ show, onHide }) => {
       <div className="sidebar-footer p-3 mt-auto border-top">
         <div className="d-flex align-items-center">
           <small className="text-muted">
-            &copy; {new Date().getFullYear()} Door Management System
+            &copy; {new Date().getFullYear()} Sistemi i Porosive
           </small>
         </div>
       </div>

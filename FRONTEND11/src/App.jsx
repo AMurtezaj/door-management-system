@@ -3,11 +3,14 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/layout/Layout';
 import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
-import DoorsPage from './pages/DoorsPage';
 import UserManagementPage from './pages/UserManagementPage';
 import ProfilePage from './pages/ProfilePage';
-import DoorDetail from './components/doors/DoorDetail';
-import DoorForm from './components/doors/DoorForm';
+import OrderList from './components/orders/OrderList';
+import OrderForm from './components/orders/OrderForm';
+import OrderEdit from './components/orders/OrderEdit';
+import CapacityManagement from './components/orders/CapacityManagement';
+import DebtManagementPage from './pages/DebtManagementPage';
+import MeasurementStatusPage from './pages/MeasurementStatusPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { useAuth } from './context/AuthContext';
 
@@ -25,18 +28,21 @@ const App = () => {
           {/* Dashboard */}
           <Route path="/" element={<Dashboard />} />
           
-          {/* Door Management */}
-          <Route path="/doors" element={<DoorsPage />} />
-          <Route path="/doors/new" element={<DoorForm />} />
-          <Route path="/doors/:id" element={<DoorDetail />} />
-          <Route path="/doors/:id/edit" element={<DoorForm />} />
+          {/* Order Management */}
+          <Route path="/orders" element={<OrderList />} />
+          <Route path="/orders/new" element={<OrderForm />} />
+          <Route path="/orders/edit/:id" element={<OrderEdit />} />
+          <Route path="/orders/capacity" element={<CapacityManagement />} />
+          
+          {/* Specialized Order Features */}
+          <Route path="/debt-management" element={<DebtManagementPage />} />
+          <Route path="/measurement-status" element={<MeasurementStatusPage />} />
           
           {/* User Profile (all users) */}
           <Route path="/profile" element={<ProfilePage />} />
           
           {/* Admin-only routes */}
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-            <Route path="/access" element={<div>Access Control Page</div>} />
             <Route path="/users" element={<UserManagementPage />} />
             <Route path="/settings" element={<div>Settings Page</div>} />
           </Route>

@@ -3,19 +3,17 @@ const { sequelize } = require('../config/database');
 
 const DailyCapacity = sequelize.define('DailyCapacity', {
     dita: {
-        type: DataTypes.STRING,
+        type: DataTypes.DATEONLY, // Changed to DATEONLY
         allowNull: false,
         unique: true
     },
     dyerGarazhi: {
         type: DataTypes.INTEGER,
-        allowNull: false,
-        defaultValue: 8
+        allowNull: false
     },
     kapake: {
         type: DataTypes.INTEGER,
-        allowNull: false,
-        defaultValue: 3
+        allowNull: false
     }
 });
 

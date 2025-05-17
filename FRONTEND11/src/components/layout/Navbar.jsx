@@ -31,9 +31,9 @@ const AppNavbar = ({ toggleSidebar }) => {
             width="30" 
             height="30" 
             className="d-inline-block align-top me-2" 
-            alt="Door Management System"
+            alt="Sistemi i Porosive"
           />
-          Door Management System
+          Sistemi i Porosive
         </Navbar.Brand>
         
         <Nav className="ms-auto d-flex align-items-center">

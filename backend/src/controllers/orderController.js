@@ -4,92 +4,199 @@ const notificationController = require('./notificationController');
 
 const orderController = {
     // Create new order
-    createOrder: async (req, res) => {
-        try {
-            const {
-                emriKlientit,
-                mbiemriKlientit,
-                numriTelefonit,
-                vendi,
-                shitesi,
-                matesi,
-                dataMatjes,
-                cmimiTotal,
-                kaparja,
-                menyraPageses,
-                dita,
-                tipiPorosise,
-                pershkrimi,
-                isPaymentDone
-            } = req.body;
+    // createOrder: async (req, res) => {
+    //     try {
+    //         const {
+    //             emriKlientit,
+    //             mbiemriKlientit,
+    //             numriTelefonit,
+    //             vendi,
+    //             shitesi,
+    //             matesi,
+    //             dataMatjes,
+    //             cmimiTotal,
+    //             kaparja,
+    //             menyraPageses,
+    //             dita,
+    //             tipiPorosise,
+    //             pershkrimi,
+    //             isPaymentDone
+    //         } = req.body;
 
-            if (!dita) {
-                return res.status(400).json({ message: 'Dita e realizimit është e detyrueshme!' });
-            }
+    //         if (!dita) {
+    //             return res.status(400).json({ message: 'Dita e realizimit është e detyrueshme!' });
+    //         }
 
-            // Check daily capacity
-            const capacity = await DailyCapacity.findOne({ where: { dita } });
-            if (!capacity) {
-                return res.status(400).json({ message: 'Kapaciteti për këtë ditë nuk është caktuar!' });
-            }
+    //         // Check daily capacity
+    //         const capacity = await DailyCapacity.findOne({ where: { dita } });
+    //         if (!capacity) {
+    //             return res.status(400).json({ message: 'Kapaciteti për këtë ditë nuk është caktuar!' });
+    //         }
 
-            if (tipiPorosise === 'derë garazhi' && capacity.dyerGarazhi <= 0) {
-                return res.status(400).json({ message: 'Nuk ka kapacitet për dyer garazhi për këtë ditë!' });
-            }
+    //         if (tipiPorosise === 'derë garazhi' && capacity.dyerGarazhi <= 0) {
+    //             return res.status(400).json({ message: 'Nuk ka kapacitet për dyer garazhi për këtë ditë!' });
+    //         }
 
-            if (tipiPorosise === 'kapak' && capacity.kapake <= 0) {
-                return res.status(400).json({ message: 'Nuk ka kapacitet për kapakë për këtë ditë!' });
-            }
+    //         if (tipiPorosise === 'kapak' && capacity.kapake <= 0) {
+    //             return res.status(400).json({ message: 'Nuk ka kapacitet për kapakë për këtë ditë!' });
+    //         }
 
-            // Update capacity
-            if (tipiPorosise === 'derë garazhi') {
-                await capacity.update({ dyerGarazhi: capacity.dyerGarazhi - 1 });
-            } else if (tipiPorosise === 'kapak') {
-                await capacity.update({ kapake: capacity.kapake - 1 });
-            }
+    //         // Update capacity
+    //         if (tipiPorosise === 'derë garazhi') {
+    //             await capacity.update({ dyerGarazhi: capacity.dyerGarazhi - 1 });
+    //         } else if (tipiPorosise === 'kapak') {
+    //             await capacity.update({ kapake: capacity.kapake - 1 });
+    //         }
 
-            // Calculate the remaining payment amount (done by the virtual field)
-            const pagesaMbeturCalculated = parseFloat(cmimiTotal) - parseFloat(kaparja || 0);
+    //         // Calculate the remaining payment amount (done by the virtual field)
+    //         const pagesaMbeturCalculated = parseFloat(cmimiTotal) - parseFloat(kaparja || 0);
             
-            // Determine debt type and status based on payment status
-            const isPaid = isPaymentDone === true;
-            let statusi = 'në proces';
-            let debtType = 'none';
+    //         // Determine debt type and status based on payment status
+    //         const isPaid = isPaymentDone === true;
+    //         let statusi = 'në proces';
+    //         let debtType = 'none';
             
-            if (!isPaid && pagesaMbeturCalculated > 0) {
-                statusi = 'borxh';
-                debtType = menyraPageses; // 'kesh' or 'banke'
-            } else if (isPaid || pagesaMbeturCalculated <= 0) {
-                statusi = 'e përfunduar';
-                debtType = 'none';
+    //         if (!isPaid && pagesaMbeturCalculated > 0) {
+    //             statusi = 'borxh';
+    //             debtType = menyraPageses; // 'kesh' or 'banke'
+    //         } else if (isPaid || pagesaMbeturCalculated <= 0) {
+    //             statusi = 'e përfunduar';
+    //             debtType = 'none';
+    //         }
+
+    //         const order = await Order.create({
+    //             emriKlientit,
+    //             mbiemriKlientit,
+    //             numriTelefonit,
+    //             vendi,
+    //             shitesi,
+    //             matesi,
+    //             dataMatjes,
+    //             cmimiTotal,
+    //             kaparja: kaparja || 0,
+    //             menyraPageses,
+    //             isPaymentDone: isPaid,
+    //             debtType,
+    //             dita,
+    //             tipiPorosise,
+    //             pershkrimi,
+    //             statusi,
+    //             statusiMatjes: 'e pamatur'
+    //         });
+
+    //         res.status(201).json(order);
+    //     } catch (error) {
+    //         console.error('Error creating order:', error);
+    //         res.status(400).json({ message: 'Diçka shkoi keq!' });
+    //     }
+    // },
+        createOrder: async (req, res) => {
+            try {
+                const {
+                    emriKlientit,
+                    mbiemriKlientit,
+                    numriTelefonit,
+                    vendi,
+                    shitesi,
+                    matesi,
+                    dataMatjes,
+                    cmimiTotal,
+                    kaparja,
+                    menyraPageses,
+                    dita,
+                    tipiPorosise,
+                    pershkrimi,
+                    isPaymentDone
+                } = req.body;
+
+                // Validate required fields
+                const requiredFields = ['emriKlientit', 'mbiemriKlientit', 'numriTelefonit', 'vendi', 'shitesi', 'cmimiTotal', 'menyraPageses', 'tipiPorosise'];
+                for (const field of requiredFields) {
+                    if (!req.body[field]) {
+                        return res.status(400).json({ message: `Fusha ${field} është e detyrueshme!` });
+                    }
+                }
+
+                // Validate numeric fields
+                if (isNaN(parseFloat(cmimiTotal))) {
+                    return res.status(400).json({ message: 'CmimiTotal duhet të jetë një numër valid!' });
+                }
+                if (kaparja && isNaN(parseFloat(kaparja))) {
+                    return res.status(400).json({ message: 'Kaparja duhet të jetë një numër valid!' });
+                }
+
+                // Format dita to DATEONLY (YYYY-MM-DD)
+                const formattedDita = dita ? new Date(dita).toISOString().split('T')[0] : null;
+                if (!formattedDita) {
+                    return res.status(400).json({ message: 'Dita e realizimit është e detyrueshme!' });
+                }
+
+                // Check daily capacity
+                const capacity = await DailyCapacity.findOne({ where: { dita: formattedDita } });
+                if (!capacity) {
+                    return res.status(400).json({ message: 'Kapaciteti për këtë ditë nuk është caktuar!' });
+                }
+
+                if (tipiPorosise === 'derë garazhi' && capacity.dyerGarazhi <= 0) {
+                    return res.status(400).json({ message: 'Nuk ka kapacitet për dyer garazhi për këtë ditë!' });
+                }
+
+                if (tipiPorosise === 'kapak' && capacity.kapake <= 0) {
+                    return res.status(400).json({ message: 'Nuk ka kapacitet për kapakë për këtë ditë!' });
+                }
+
+                // Update capacity
+                if (tipiPorosise === 'derë garazhi') {
+                    await capacity.update({ dyerGarazhi: capacity.dyerGarazhi - 1 });
+                } else if (tipiPorosise === 'kapak') {
+                    await capacity.update({ kapake: capacity.kapake - 1 });
+                }
+
+                // Calculate the remaining payment amount (done by the virtual field)
+                const pagesaMbeturCalculated = parseFloat(cmimiTotal) - parseFloat(kaparja || 0);
+                
+                // Determine debt type and status based on payment status
+                const isPaid = isPaymentDone === true;
+                let statusi = 'në proces';
+                let debtType = 'none';
+                
+                if (!isPaid && pagesaMbeturCalculated > 0) {
+                    statusi = 'borxh';
+                    debtType = menyraPageses; // 'kesh' or 'banke'
+                } else if (isPaid || pagesaMbeturCalculated <= 0) {
+                    statusi = 'e përfunduar';
+                    debtType = 'none';
+                }
+
+                const order = await Order.create({
+                    emriKlientit,
+                    mbiemriKlientit,
+                    numriTelefonit,
+                    vendi,
+                    shitesi,
+                    matesi,
+                    dataMatjes,
+                    cmimiTotal,
+                    kaparja: kaparja || 0,
+                    menyraPageses,
+                    isPaymentDone: isPaid,
+                    debtType,
+                    dita: formattedDita,
+                    tipiPorosise,
+                    pershkrimi,
+                    statusi,
+                    statusiMatjes: 'e pamatur'
+                });
+
+                // Create a notification for the order
+                await notificationController.createOrderNotification(order.id);
+
+                res.status(201).json(order);
+            } catch (error) {
+                console.error('Error creating order:', error);
+                res.status(400).json({ message: 'Diçka shkoi keq!', error: error.message });
             }
-
-            const order = await Order.create({
-                emriKlientit,
-                mbiemriKlientit,
-                numriTelefonit,
-                vendi,
-                shitesi,
-                matesi,
-                dataMatjes,
-                cmimiTotal,
-                kaparja: kaparja || 0,
-                menyraPageses,
-                isPaymentDone: isPaid,
-                debtType,
-                dita,
-                tipiPorosise,
-                pershkrimi,
-                statusi,
-                statusiMatjes: 'e pamatur'
-            });
-
-            res.status(201).json(order);
-        } catch (error) {
-            console.error('Error creating order:', error);
-            res.status(400).json({ message: 'Diçka shkoi keq!' });
-        }
-    },
+        },
 
     // Get all orders
     getAllOrders: async (req, res) => {

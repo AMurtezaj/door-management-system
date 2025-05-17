@@ -15,4 +15,7 @@ router.get('/:dita', auth, capacityController.getCapacityByDay);
 // Update capacity (admin only)
 router.put('/:id', auth, isAdmin, capacityController.updateCapacity);
 
+// Delete capacity (admin only)
+router.delete('/:id', auth, isAdmin, capacityController.deleteCapacity);
+
 module.exports = router; 
