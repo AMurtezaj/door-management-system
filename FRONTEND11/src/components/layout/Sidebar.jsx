@@ -67,12 +67,6 @@ const Sidebar = ({ show, onHide }) => {
       roles: ['admin'] 
     },
     { 
-      path: '/logs', 
-      label: 'Regjistrimet e Aktivitetit', 
-      icon: <ClockHistory size={20} />, 
-      roles: ['admin', 'menaxher'] 
-    },
-    { 
       path: '/notifications', 
       label: 'Njoftimet', 
       icon: <Bell size={20} />, 
@@ -88,7 +82,7 @@ const Sidebar = ({ show, onHide }) => {
   return (
     <div className={`sidebar bg-dark text-white ${show ? 'show' : ''}`}>
       <div className="sidebar-header p-3 d-flex align-items-center justify-content-center border-bottom">
-        <h4 className="m-0">Sistemi i Porosive</h4>
+        <h4 className="m-0">LindiDoors Management</h4>
       </div>
       
       <div className="sidebar-user p-3 text-center border-bottom">
