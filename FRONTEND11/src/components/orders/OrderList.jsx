@@ -102,7 +102,10 @@ const OrderList = () => {
         order.emriKlientit.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.mbiemriKlientit.toLowerCase().includes(searchTerm.toLowerCase()) ||
         order.numriTelefonit.includes(searchTerm) ||
-        order.vendi?.toLowerCase().includes(searchTerm.toLowerCase())
+        order.vendi?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.kaparaReceiver?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.sender?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        order.installer?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     
@@ -228,6 +231,7 @@ const OrderList = () => {
             <th>Statusi</th>
             <th>Matja</th>
             <th>Dita</th>
+            <th>Personeli</th>
             <th>Veprime</th>
           </tr>
         </thead>
@@ -255,6 +259,13 @@ const OrderList = () => {
               <td>{getStatusBadge(order.statusi)}</td>
               <td>{getMeasurementStatusBadge(order.statusiMatjes)}</td>
               <td>{order.dita ? format(new Date(order.dita), 'dd/MM/yyyy') : 'N/A'}</td>
+              <td>
+                <small>
+                  <div><strong>Mori Kaparën:</strong> {order.kaparaReceiver || 'N/A'}</div>
+                  <div><strong>Dërguesi:</strong> {order.sender || 'N/A'}</div>
+                  <div><strong>Montuesi:</strong> {order.installer || 'N/A'}</div>
+                </small>
+              </td>
               <td>
                 <div className="d-flex gap-1 flex-wrap">
                   <Button variant="info" size="sm" onClick={() => handleEdit(order.id)}>
@@ -291,7 +302,7 @@ const OrderList = () => {
           
           {filteredOrders().length === 0 && (
             <tr>
-              <td colSpan="9" className="text-center py-4">
+              <td colSpan="10" className="text-center py-4">
                 {searchTerm || filter !== 'all' ? 
                   'Nuk u gjetën porosi me kriteret e zgjedhura' : 
                   'Nuk ka porosi të regjistruara'

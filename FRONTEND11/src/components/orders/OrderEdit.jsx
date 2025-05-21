@@ -23,6 +23,9 @@ const OrderEdit = () => {
     dataMatjes: '',
     cmimiTotal: '',
     kaparja: '0',
+    kaparaReceiver: '',
+    sender: '',
+    installer: '',
     menyraPageses: 'kesh',
     dita: format(new Date(), 'yyyy-MM-dd'),
     tipiPorosise: 'derë garazhi',
@@ -251,6 +254,49 @@ const OrderEdit = () => {
               
               <Col md={4}>
                 <Form.Group className="mb-3">
+                  <Form.Label>Mori Kaparën</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="kaparaReceiver"
+                    value={formData.kaparaReceiver || ''}
+                    onChange={handleChange}
+                    placeholder="Emri i personit që mori kaparën"
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+            
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Dërguesi</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="sender"
+                    value={formData.sender || ''}
+                    onChange={handleChange}
+                    placeholder="Personi që dërgoi porosinë"
+                  />
+                </Form.Group>
+              </Col>
+              
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Montuesi</Form.Label>
+                  <Form.Control
+                    type="text"
+                    name="installer"
+                    value={formData.installer || ''}
+                    onChange={handleChange}
+                    placeholder="Personi që do të montojë derën"
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+            
+            <Row>
+              <Col md={4}>
+                <Form.Group className="mb-3">
                   <Form.Label>Pagesa e Mbetur</Form.Label>
                   <Form.Control
                     type="number"
@@ -261,9 +307,7 @@ const OrderEdit = () => {
                   />
                 </Form.Group>
               </Col>
-            </Row>
-            
-            <Row>
+              
               <Col md={4}>
                 <Form.Group className="mb-3">
                   <Form.Label>Mënyra e Pagesës <span className="text-danger">*</span></Form.Label>
@@ -295,7 +339,9 @@ const OrderEdit = () => {
                   </Form.Text>
                 </Form.Group>
               </Col>
-              
+            </Row>
+            
+            <Row>
               <Col md={4}>
                 <Form.Group className="mb-3">
                   <Form.Label>Tipi i Porosisë <span className="text-danger">*</span></Form.Label>

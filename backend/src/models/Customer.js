@@ -1,27 +1,27 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 
-const Order = sequelize.define('Order', {
+const Customer = sequelize.define('Customer', {
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true
     },
-    customerId: {
-        type: DataTypes.INTEGER,
-        allowNull: false
-    },
-    tipiPorosise: {
-        type: DataTypes.ENUM('derë garazhi', 'kapak', 'derë dhome'),
-        allowNull: false
-    },
-    shitesi: {
+    emri: {
         type: DataTypes.STRING,
         allowNull: false
     },
-    pershkrimi: {
-        type: DataTypes.TEXT,
-        allowNull: true
+    mbiemri: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    telefoni: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
+    vendi: {
+        type: DataTypes.STRING,
+        allowNull: false
     },
     createdAt: {
         type: DataTypes.DATE,
@@ -33,4 +33,4 @@ const Order = sequelize.define('Order', {
     }
 });
 
-module.exports = Order; 
+module.exports = Customer; 

@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const { connectPostgres, sequelize } = require("./config/database");
+const { sequelize: dbModels } = require('./models');
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ app.use(express.json());
 // Routes - notice these all include /api prefix to match frontend expectations
 app.use("/api/users", require("./routes/userRoutes"));
 app.use("/api/orders", require("./routes/orderRoutes"));
+app.use("/api/customers", require("./routes/customerRoutes"));
 app.use("/api/capacities", require("./routes/capacityRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
 
@@ -45,7 +47,7 @@ const startServer = async () => {
     await connectPostgres();
     
     // Sync models with database
-    await sequelize.sync();
+    await dbModels.sync();
     
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
