@@ -5,70 +5,70 @@ const orderService = require('../services/orderService');
 
 const orderController = {
     // Create new order
-    createOrder: async (req, res) => {
-        try {
-            const {
-                emriKlientit,
-                mbiemriKlientit,
-                numriTelefonit,
-                vendi,
-                shitesi,
-                matesi,
-                dataMatjes,
-                cmimiTotal,
-                kaparja,
+        createOrder: async (req, res) => {
+            try {
+                const {
+                    emriKlientit,
+                    mbiemriKlientit,
+                    numriTelefonit,
+                    vendi,
+                    shitesi,
+                    matesi,
+                    dataMatjes,
+                    cmimiTotal,
+                    kaparja,
                 kaparaReceiver,
                 sender,
                 installer,
-                menyraPageses,
-                dita,
-                tipiPorosise,
-                pershkrimi,
-                isPaymentDone
-            } = req.body;
+                    menyraPageses,
+                    dita,
+                    tipiPorosise,
+                    pershkrimi,
+                    isPaymentDone
+                } = req.body;
 
-            // Validate required fields
-            const requiredFields = ['emriKlientit', 'mbiemriKlientit', 'numriTelefonit', 'vendi', 'shitesi', 'cmimiTotal', 'menyraPageses', 'tipiPorosise'];
-            for (const field of requiredFields) {
-                if (!req.body[field]) {
-                    return res.status(400).json({ message: `Fusha ${field} është e detyrueshme!` });
+                // Validate required fields
+                const requiredFields = ['emriKlientit', 'mbiemriKlientit', 'numriTelefonit', 'vendi', 'shitesi', 'cmimiTotal', 'menyraPageses', 'tipiPorosise'];
+                for (const field of requiredFields) {
+                    if (!req.body[field]) {
+                        return res.status(400).json({ message: `Fusha ${field} është e detyrueshme!` });
+                    }
                 }
-            }
 
-            // Validate numeric fields
-            if (isNaN(parseFloat(cmimiTotal))) {
-                return res.status(400).json({ message: 'CmimiTotal duhet të jetë një numër valid!' });
-            }
-            if (kaparja && isNaN(parseFloat(kaparja))) {
-                return res.status(400).json({ message: 'Kaparja duhet të jetë një numër valid!' });
-            }
+                // Validate numeric fields
+                if (isNaN(parseFloat(cmimiTotal))) {
+                    return res.status(400).json({ message: 'CmimiTotal duhet të jetë një numër valid!' });
+                }
+                if (kaparja && isNaN(parseFloat(kaparja))) {
+                    return res.status(400).json({ message: 'Kaparja duhet të jetë një numër valid!' });
+                }
 
-            // Format dita to DATEONLY (YYYY-MM-DD)
-            const formattedDita = dita ? new Date(dita).toISOString().split('T')[0] : null;
-            if (!formattedDita) {
-                return res.status(400).json({ message: 'Dita e realizimit është e detyrueshme!' });
-            }
+                // Format dita to DATEONLY (YYYY-MM-DD)
+                const formattedDita = dita ? new Date(dita).toISOString().split('T')[0] : null;
+                if (!formattedDita) {
+                    return res.status(400).json({ message: 'Dita e realizimit është e detyrueshme!' });
+                }
 
-            // Check daily capacity
-            const capacity = await DailyCapacity.findOne({ where: { dita: formattedDita } });
-            if (!capacity) {
-                return res.status(400).json({ message: 'Kapaciteti për këtë ditë nuk është caktuar!' });
-            }
+                // Check daily capacity
+                const capacity = await DailyCapacity.findOne({ where: { dita: formattedDita } });
+                if (!capacity) {
+                    return res.status(400).json({ message: 'Kapaciteti për këtë ditë nuk është caktuar!' });
+                }
 
-            if (tipiPorosise === 'derë garazhi' && capacity.dyerGarazhi <= 0) {
-                return res.status(400).json({ message: 'Nuk ka kapacitet për dyer garazhi për këtë ditë!' });
-            }
+                if (tipiPorosise === 'derë garazhi' && capacity.dyerGarazhi <= 0) {
+                    return res.status(400).json({ message: 'Nuk ka kapacitet për dyer garazhi për këtë ditë!' });
+                }
 
-            if (tipiPorosise === 'kapak' && capacity.kapake <= 0) {
-                return res.status(400).json({ message: 'Nuk ka kapacitet për kapakë për këtë ditë!' });
-            }
+                if (tipiPorosise === 'kapak' && capacity.kapake <= 0) {
+                    return res.status(400).json({ message: 'Nuk ka kapacitet për kapakë për këtë ditë!' });
+                }
 
-            // Update capacity
-            if (tipiPorosise === 'derë garazhi') {
-                await capacity.update({ dyerGarazhi: capacity.dyerGarazhi - 1 });
-            } else if (tipiPorosise === 'kapak') {
-                await capacity.update({ kapake: capacity.kapake - 1 });
-            }
+                // Update capacity
+                if (tipiPorosise === 'derë garazhi') {
+                    await capacity.update({ dyerGarazhi: capacity.dyerGarazhi - 1 });
+                } else if (tipiPorosise === 'kapak') {
+                    await capacity.update({ kapake: capacity.kapake - 1 });
+                }
 
             // Prepare all order data with formatted date
             const orderData = {
@@ -79,15 +79,15 @@ const orderController = {
             // Use the service to create a complete order
             const order = await orderService.createCompleteOrder(orderData);
 
-            // Create a notification for the order
-            await notificationController.createOrderNotification(order.id);
+                // Create a notification for the order
+                await notificationController.createOrderNotification(order.id);
 
-            res.status(201).json(order);
-        } catch (error) {
-            console.error('Error creating order:', error);
-            res.status(400).json({ message: 'Diçka shkoi keq!', error: error.message });
-        }
-    },
+                res.status(201).json(order);
+            } catch (error) {
+                console.error('Error creating order:', error);
+                res.status(400).json({ message: 'Diçka shkoi keq!', error: error.message });
+            }
+        },
 
     // Get all orders
     getAllOrders: async (req, res) => {
@@ -294,6 +294,37 @@ const orderController = {
             res.json(order);
         } catch (error) {
             res.status(400).json({ message: 'Diçka shkoi keq!' });
+        }
+    },
+    
+    // Update print status
+    updatePrintStatus: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { eshtePrintuar } = req.body;
+
+            const orderDetails = await OrderDetails.findOne({ where: { orderId: id } });
+            if (!orderDetails) {
+                return res.status(404).json({ message: 'Porosia nuk u gjet!' });
+            }
+
+            await orderDetails.update({
+                eshtePrintuar: eshtePrintuar !== undefined ? eshtePrintuar : true,
+                updatedAt: new Date()
+            });
+
+            const order = await Order.findByPk(id, {
+                include: [
+                    { model: Customer },
+                    { model: Payment },
+                    { model: OrderDetails }
+                ]
+            });
+
+            res.json(order);
+        } catch (error) {
+            console.error('Error updating print status:', error);
+            res.status(400).json({ message: 'Diçka shkoi keq gjatë përditësimit të statusit të printimit!' });
         }
     },
 

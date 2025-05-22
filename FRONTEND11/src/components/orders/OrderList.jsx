@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { getAllOrders, updatePaymentStatus, deleteOrder } from '../../services/orderService';
 import { useAuth } from '../../context/AuthContext';
+import PrintInvoiceModal from './PrintInvoiceModal';
 
 const OrderList = () => {
   const navigate = useNavigate();
@@ -13,6 +14,10 @@ const OrderList = () => {
   const [filter, setFilter] = useState('all'); // all, inProcess, completed, debt, unpaid
   const [searchTerm, setSearchTerm] = useState('');
   const { isAuthenticated, refreshAuth } = useAuth();
+  
+  // Print invoice state
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
   
   // Fetch orders on mount and when authentication changes
   useEffect(() => {
@@ -28,6 +33,7 @@ const OrderList = () => {
       console.log('Fetching orders...');
       const data = await getAllOrders();
       console.log(`Successfully fetched ${data.length} orders`);
+      console.log('First order data sample:', data[0]);
       setOrders(data);
     } catch (err) {
       console.error('Error fetching orders:', err);
@@ -80,6 +86,11 @@ const OrderList = () => {
   
   const handleEdit = (id) => {
     navigate(`/orders/edit/${id}`);
+  };
+  
+  const handlePrintInvoice = (order) => {
+    setSelectedOrder(order);
+    setShowPrintModal(true);
   };
   
   const filteredOrders = () => {
@@ -256,14 +267,14 @@ const OrderList = () => {
                   }
                 </small>
               </td>
-              <td>{getStatusBadge(order.statusi)}</td>
-              <td>{getMeasurementStatusBadge(order.statusiMatjes)}</td>
-              <td>{order.dita ? format(new Date(order.dita), 'dd/MM/yyyy') : 'N/A'}</td>
+              <td>{order.statusi ? getStatusBadge(order.statusi) : null}</td>
+              <td>{order.statusiMatjes ? getMeasurementStatusBadge(order.statusiMatjes) : null}</td>
+              <td>{order.dita ? format(new Date(order.dita), 'dd/MM/yyyy') : null}</td>
               <td>
                 <small>
-                  <div><strong>Mori Kaparën:</strong> {order.kaparaReceiver || 'N/A'}</div>
-                  <div><strong>Dërguesi:</strong> {order.sender || 'N/A'}</div>
-                  <div><strong>Montuesi:</strong> {order.installer || 'N/A'}</div>
+                  <div><strong>Mori Kaparën:</strong> {order.kaparaReceiver}</div>
+                  <div><strong>Dërguesi:</strong> {order.sender}</div>
+                  <div><strong>Montuesi:</strong> {order.installer}</div>
                 </small>
               </td>
               <td>
@@ -292,6 +303,15 @@ const OrderList = () => {
                     </Button>
                   )}
                   
+                  <Button 
+                    variant="primary" 
+                    size="sm" 
+                    onClick={() => handlePrintInvoice(order)}
+                    title={order.eshtePrintuar ? "Printo Përsëri" : "Printo Faturën"}
+                  >
+                    <i className="bi bi-printer"></i> {order.eshtePrintuar ? "Printo Përsëri" : "Printo Faturën"}
+                  </Button>
+                  
                   <Button variant="danger" size="sm" onClick={() => handleDelete(order.id)}>
                     Fshi
                   </Button>
@@ -312,6 +332,17 @@ const OrderList = () => {
           )}
         </tbody>
       </Table>
+      
+      {/* Print Invoice Modal */}
+      <PrintInvoiceModal 
+        show={showPrintModal} 
+        onHide={() => {
+          setShowPrintModal(false);
+          // Refresh orders after printing to update the print status
+          fetchOrders();
+        }} 
+        order={selectedOrder}
+      />
     </Container>
   );
 };

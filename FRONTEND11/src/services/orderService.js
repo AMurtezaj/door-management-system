@@ -34,14 +34,27 @@ const formatOrderResponse = (order) => {
   if (order.OrderDetails) {
     formattedOrder.matesi = order.OrderDetails.matesi;
     formattedOrder.dataMatjes = order.OrderDetails.dataMatjes;
-    formattedOrder.sender = order.OrderDetails.sender;
-    formattedOrder.installer = order.OrderDetails.installer;
+    formattedOrder.sender = order.OrderDetails.sender || '';
+    formattedOrder.installer = order.OrderDetails.installer || '';
     formattedOrder.dita = order.OrderDetails.dita;
     formattedOrder.statusi = order.OrderDetails.statusi;
     formattedOrder.eshtePrintuar = order.OrderDetails.eshtePrintuar;
     formattedOrder.kaVule = order.OrderDetails.kaVule;
     formattedOrder.statusiMatjes = order.OrderDetails.statusiMatjes;
+  } else {
+    // Ensure we always have these fields, even if OrderDetails is missing
+    formattedOrder.sender = '';
+    formattedOrder.installer = '';
+    formattedOrder.dita = null;
   }
+  
+  // Debug the formatted order
+  console.log('Formatted order:', {
+    id: formattedOrder.id,
+    sender: formattedOrder.sender,
+    installer: formattedOrder.installer,
+    dita: formattedOrder.dita
+  });
   
   return formattedOrder;
 };
@@ -268,5 +281,20 @@ export const getOrdersByMeasurementStatus = async (status) => {
       return [];
     }
     throw new Error(error.response?.data?.message || `Gabim gjatë ngarkimit të porosive me status matje "${status}"`);
+  }
+};
+
+/**
+ * Update the print status of an order
+ * @param {number} id - Order ID
+ * @returns {Promise} - Promise with updated order data
+ */
+export const updateOrderPrintStatus = async (id) => {
+  try {
+    const response = await api.patch(`/orders/${id}/print-status`, { eshtePrintuar: true });
+    return formatOrderResponse(response.data);
+  } catch (error) {
+    console.error(`Error updating print status for order ${id}:`, error);
+    throw new Error(error.response?.data?.message || `Gabim gjatë përditësimit të statusit të printimit për porosinë ${id}`);
   }
 }; 

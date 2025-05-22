@@ -37,4 +37,7 @@ router.delete('/:id', auth, isAdmin, orderController.deleteOrder);
 router.put('/:id/measurement', auth, orderController.updateMeasurementStatus);
 router.get('/measurement/:statusiMatjes', auth, orderController.getOrdersByMeasurementStatus);
 
+// Update print status
+router.patch('/:id/print-status', auth, orderController.updatePrintStatus);
+
 module.exports = router; 
