@@ -5,6 +5,8 @@ import { format } from 'date-fns';
 import { getAllOrders, updatePaymentStatus, deleteOrder } from '../../services/orderService';
 import { useAuth } from '../../context/AuthContext';
 import PrintInvoiceModal from './PrintInvoiceModal';
+import SupplementaryOrderForm from './SupplementaryOrderForm';
+import DimensionManager from './DimensionManager';
 
 const OrderList = () => {
   const navigate = useNavigate();
@@ -18,6 +20,10 @@ const OrderList = () => {
   // Print invoice state
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  
+  // Supplementary order state
+  const [showSupplementaryForm, setShowSupplementaryForm] = useState(false);
+  const [selectedParentOrder, setSelectedParentOrder] = useState(null);
   
   // Fetch orders on mount and when authentication changes
   useEffect(() => {
@@ -93,6 +99,16 @@ const OrderList = () => {
     setShowPrintModal(true);
   };
   
+  const handleAddSupplementaryOrder = (order) => {
+    setSelectedParentOrder(order);
+    setShowSupplementaryForm(true);
+  };
+  
+  const handleSupplementaryOrderSuccess = () => {
+    // Refresh orders to show updated data
+    fetchOrders();
+  };
+  
   const filteredOrders = () => {
     let filtered = [...orders];
     
@@ -146,7 +162,7 @@ const OrderList = () => {
         return <Badge bg="secondary">{status}</Badge>;
     }
   };
-  
+
   if (loading) {
     return (
       <Container className="mt-4">
@@ -249,7 +265,9 @@ const OrderList = () => {
         <tbody>
           {filteredOrders().map(order => (
             <tr key={order.id}>
-              <td>{order.id}</td>
+              <td>
+                #{order.id}
+              </td>
               <td>
                 <strong>{order.emriKlientit} {order.mbiemriKlientit}</strong>
               </td>
@@ -282,6 +300,33 @@ const OrderList = () => {
                   <Button variant="info" size="sm" onClick={() => handleEdit(order.id)}>
                     Edito
                   </Button>
+                  
+                  <DimensionManager 
+                    orderId={order.id}
+                    initialDimensions={{
+                      gjatesia: order.gjatesia,
+                      gjeresia: order.gjeresia,
+                      profiliLarte: order.profiliLarte,
+                      profiliPoshtem: order.profiliPoshtem
+                    }}
+                    onUpdate={(updatedOrder) => {
+                      // Përditëso porosinë në state
+                      setOrders(orders.map(o => 
+                        o.id === order.id ? { ...o, ...updatedOrder } : o
+                      ));
+                    }}
+                  />
+                  
+                  {order.tipiPorosise === 'derë garazhi' && (
+                    <Button 
+                      variant="outline-success" 
+                      size="sm" 
+                      onClick={() => handleAddSupplementaryOrder(order)}
+                      title="Shto porosi shtesë"
+                    >
+                      <i className="bi bi-plus-circle"></i> Shtesë
+                    </Button>
+                  )}
                   
                   {!order.isPaymentDone && (
                     <Button 
@@ -342,6 +387,17 @@ const OrderList = () => {
           fetchOrders();
         }} 
         order={selectedOrder}
+      />
+      
+      {/* Supplementary Order Form Modal */}
+      <SupplementaryOrderForm
+        show={showSupplementaryForm}
+        onHide={() => {
+          setShowSupplementaryForm(false);
+          setSelectedParentOrder(null);
+        }}
+        parentOrder={selectedParentOrder}
+        onSuccess={handleSupplementaryOrderSuccess}
       />
     </Container>
   );

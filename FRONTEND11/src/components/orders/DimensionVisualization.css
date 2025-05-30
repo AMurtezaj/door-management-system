@@ -1,0 +1,253 @@
+/* Dimension Visualization Styles */
+.dimension-visualization-card {
+  border: 2px solid #e9ecef;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.dimension-container {
+  padding: 20px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.dimension-header {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.dimension-visual {
+  position: relative;
+  width: 100%;
+  height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Horizontal Arrows */
+.arrow-horizontal {
+  position: relative;
+  width: 80%;
+  height: 20px;
+  margin: 10px 0;
+}
+
+.arrow-horizontal .arrow-line {
+  width: 100%;
+  height: 2px;
+  background-color: #007bff;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.arrow-horizontal .arrow-head-start,
+.arrow-horizontal .arrow-head-end {
+  position: absolute;
+  width: 0;
+  height: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.arrow-horizontal .arrow-head-start {
+  left: 0;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-right: 8px solid #007bff;
+}
+
+.arrow-horizontal .arrow-head-end {
+  right: 0;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 8px solid #007bff;
+}
+
+/* Vertical Arrows */
+.arrow-vertical {
+  position: relative;
+  height: 80%;
+  width: 20px;
+  margin: 0 10px;
+  display: inline-block;
+}
+
+.arrow-vertical .arrow-line {
+  height: 100%;
+  width: 2px;
+  background-color: #007bff;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.arrow-vertical .arrow-head-start,
+.arrow-vertical .arrow-head-end {
+  position: absolute;
+  width: 0;
+  height: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.arrow-vertical .arrow-head-start {
+  top: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 8px solid #007bff;
+}
+
+.arrow-vertical .arrow-head-end {
+  bottom: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 8px solid #007bff;
+}
+
+/* Profile Arrow Styles */
+.profile-line {
+  background-color: #dc3545 !important;
+}
+
+.profile-head {
+  border-color: #dc3545 !important;
+}
+
+.arrow-horizontal .profile-head {
+  border-right-color: #dc3545 !important;
+  border-left-color: #dc3545 !important;
+}
+
+.arrow-vertical .profile-head {
+  border-top-color: #dc3545 !important;
+  border-bottom-color: #dc3545 !important;
+}
+
+/* Final Arrow Styles */
+.final-line {
+  background-color: #28a745 !important;
+}
+
+.final-head {
+  border-color: #28a745 !important;
+}
+
+.arrow-horizontal .final-head {
+  border-right-color: #28a745 !important;
+  border-left-color: #28a745 !important;
+}
+
+.arrow-vertical .final-head {
+  border-top-color: #28a745 !important;
+  border-bottom-color: #28a745 !important;
+}
+
+/* Arrow Labels */
+.arrow-label {
+  position: absolute;
+  font-size: 12px;
+  font-weight: bold;
+  white-space: nowrap;
+  background-color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+}
+
+.arrow-horizontal .arrow-label {
+  top: -25px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.arrow-vertical .arrow-label {
+  left: 25px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.main-label {
+  color: #007bff;
+  border-color: #007bff;
+}
+
+.profile-label {
+  color: #dc3545;
+  border-color: #dc3545;
+}
+
+.final-label {
+  color: #28a745;
+  border-color: #28a745;
+  font-weight: bold;
+}
+
+/* Calculation Text */
+.calculation-text {
+  text-align: center;
+  margin-top: 15px;
+  padding: 8px;
+  background-color: white;
+  border-radius: 4px;
+  border: 1px solid #dee2e6;
+}
+
+/* Summary Styles */
+.dimension-summary {
+  border: 1px solid #dee2e6;
+}
+
+.summary-item {
+  padding: 5px 0;
+  font-size: 14px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .dimension-container {
+    min-height: 150px;
+    padding: 15px;
+  }
+  
+  .dimension-visual {
+    height: 100px;
+  }
+  
+  .arrow-label {
+    font-size: 10px;
+    padding: 1px 4px;
+  }
+  
+  .arrow-vertical .arrow-label {
+    left: 20px;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .dimension-visualization-card {
+    border: 1px solid #000;
+    box-shadow: none;
+    page-break-inside: avoid;
+  }
+  
+  .dimension-container {
+    border: 1px solid #000;
+    background-color: white;
+  }
+  
+  .arrow-line,
+  .arrow-head-start,
+  .arrow-head-end {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+} 

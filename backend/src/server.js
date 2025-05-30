@@ -23,10 +23,11 @@ app.use("/api/orders", require("./routes/orderRoutes"));
 app.use("/api/customers", require("./routes/customerRoutes"));
 app.use("/api/capacities", require("./routes/capacityRoutes"));
 app.use("/api/notifications", require("./routes/notificationRoutes"));
+app.use("/api/supplementary-orders", require("./routes/supplementaryOrderRoutes"));
 
 // Add a root route
 app.get('/', (req, res) => {
-  res.json({ message: 'Welcome to the Lindidoors API! Use /api/users, /api/orders, /api/capacities, or /api/notifications to access the API endpoints.' });
+  res.json({ message: 'Welcome to the Lindidoors API! Use /api/users, /api/orders, /api/capacities, /api/notifications, or /api/supplementary-orders to access the API endpoints.' });
 });
 
 // 404 handler - only handle routes that weren't matched above

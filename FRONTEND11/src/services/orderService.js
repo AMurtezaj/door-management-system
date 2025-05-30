@@ -30,22 +30,42 @@ const formatOrderResponse = (order) => {
     formattedOrder.pagesaMbetur = order.Payment.pagesaMbetur;
   }
   
-  // Add OrderDetails properties
-  if (order.OrderDetails) {
-    formattedOrder.matesi = order.OrderDetails.matesi;
-    formattedOrder.dataMatjes = order.OrderDetails.dataMatjes;
-    formattedOrder.sender = order.OrderDetails.sender || '';
-    formattedOrder.installer = order.OrderDetails.installer || '';
-    formattedOrder.dita = order.OrderDetails.dita;
-    formattedOrder.statusi = order.OrderDetails.statusi;
-    formattedOrder.eshtePrintuar = order.OrderDetails.eshtePrintuar;
-    formattedOrder.kaVule = order.OrderDetails.kaVule;
-    formattedOrder.statusiMatjes = order.OrderDetails.statusiMatjes;
+  // Add OrderDetails properties (note: backend sends as OrderDetail due to Sequelize association naming)
+  if (order.OrderDetail) {
+    formattedOrder.matesi = order.OrderDetail.matesi;
+    formattedOrder.dataMatjes = order.OrderDetail.dataMatjes;
+    formattedOrder.sender = order.OrderDetail.sender || '';
+    formattedOrder.installer = order.OrderDetail.installer || '';
+    formattedOrder.dita = order.OrderDetail.dita;
+    formattedOrder.statusi = order.OrderDetail.statusi;
+    formattedOrder.eshtePrintuar = order.OrderDetail.eshtePrintuar;
+    formattedOrder.kaVule = order.OrderDetail.kaVule;
+    formattedOrder.statusiMatjes = order.OrderDetail.statusiMatjes;
+    // Add dimension fields
+    formattedOrder.gjatesia = order.OrderDetail.gjatesia;
+    formattedOrder.gjeresia = order.OrderDetail.gjeresia;
+    formattedOrder.profiliLarte = order.OrderDetail.profiliLarte;
+    formattedOrder.profiliPoshtem = order.OrderDetail.profiliPoshtem;
+    formattedOrder.gjatesiaFinale = order.OrderDetail.gjatesiaFinale;
+    formattedOrder.gjeresiaFinale = order.OrderDetail.gjeresiaFinale;
   } else {
-    // Ensure we always have these fields, even if OrderDetails is missing
+    // Ensure we always have these fields, even if OrderDetail is missing
     formattedOrder.sender = '';
     formattedOrder.installer = '';
     formattedOrder.dita = null;
+    formattedOrder.gjatesia = null;
+    formattedOrder.gjeresia = null;
+    formattedOrder.profiliLarte = 0;
+    formattedOrder.profiliPoshtem = 0;
+    formattedOrder.gjatesiaFinale = 0;
+    formattedOrder.gjeresiaFinale = 0;
+  }
+  
+  // Add SupplementaryOrders (keep as array for frontend components)
+  if (order.SupplementaryOrders) {
+    formattedOrder.SupplementaryOrders = order.SupplementaryOrders;
+  } else {
+    formattedOrder.SupplementaryOrders = [];
   }
   
   // Debug the formatted order
@@ -53,7 +73,8 @@ const formatOrderResponse = (order) => {
     id: formattedOrder.id,
     sender: formattedOrder.sender,
     installer: formattedOrder.installer,
-    dita: formattedOrder.dita
+    dita: formattedOrder.dita,
+    supplementaryOrdersCount: formattedOrder.SupplementaryOrders.length
   });
   
   return formattedOrder;
@@ -296,5 +317,73 @@ export const updateOrderPrintStatus = async (id) => {
   } catch (error) {
     console.error(`Error updating print status for order ${id}:`, error);
     throw new Error(error.response?.data?.message || `Gabim gjatë përditësimit të statusit të printimit për porosinë ${id}`);
+  }
+};
+
+/**
+ * Get supplementary order cash debts
+ * @returns {Promise} - Promise with supplementary orders data
+ */
+export const getSupplementaryCashDebtOrders = async () => {
+  try {
+    const response = await api.get('/orders/debts/supplementary/cash');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching supplementary cash debt orders:', error);
+    if (error.response && error.response.status === 401) {
+      return [];
+    }
+    throw new Error(error.response?.data?.message || 'Gabim gjatë ngarkimit të borxheve shtesë në kesh');
+  }
+};
+
+/**
+ * Get supplementary order bank debts
+ * @returns {Promise} - Promise with supplementary orders data
+ */
+export const getSupplementaryBankDebtOrders = async () => {
+  try {
+    const response = await api.get('/orders/debts/supplementary/bank');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching supplementary bank debt orders:', error);
+    if (error.response && error.response.status === 401) {
+      return [];
+    }
+    throw new Error(error.response?.data?.message || 'Gabim gjatë ngarkimit të borxheve shtesë në bankë');
+  }
+};
+
+/**
+ * Update door dimensions for an order
+ * @param {number} id - Order ID
+ * @param {Object} dimensionData - Dimension data {gjatesia, gjeresia, profiliLarte, profiliPoshtem}
+ * @returns {Promise} - Promise with updated order and dimension calculations
+ */
+export const updateDimensions = async (id, dimensionData) => {
+  try {
+    const response = await api.put(`/orders/${id}/dimensions`, dimensionData);
+    return {
+      order: formatOrderResponse(response.data.order),
+      dimensionCalculations: response.data.dimensionCalculations
+    };
+  } catch (error) {
+    console.error(`Error updating dimensions for order ${id}:`, error);
+    throw new Error(error.response?.data?.message || `Gabim gjatë përditësimit të dimensioneve për porosinë ${id}`);
+  }
+};
+
+/**
+ * Get dimension calculations for an order
+ * @param {number} id - Order ID
+ * @returns {Promise} - Promise with dimension calculations
+ */
+export const getDimensionCalculations = async (id) => {
+  try {
+    const response = await api.get(`/orders/${id}/dimensions`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error getting dimension calculations for order ${id}:`, error);
+    throw new Error(error.response?.data?.message || `Gabim gjatë marrjes së llogaritjeve të dimensioneve për porosinë ${id}`);
   }
 }; 

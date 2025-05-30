@@ -14,7 +14,8 @@ import {
   Cart,
   Calendar3,
   CurrencyExchange,
-  Rulers
+  Rulers,
+  PlusSquare
 } from 'react-bootstrap-icons';
 import './Sidebar.css';
 
@@ -34,6 +35,12 @@ const Sidebar = ({ show, onHide }) => {
       path: '/orders', 
       label: 'Porositë', 
       icon: <Cart size={20} />, 
+      roles: ['admin', 'menaxher'] 
+    },
+    { 
+      path: '/orders/additional', 
+      label: 'Porositë Shtesë', 
+      icon: <PlusSquare size={20} />, 
       roles: ['admin', 'menaxher'] 
     },
     { 

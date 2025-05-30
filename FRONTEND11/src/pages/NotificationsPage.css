@@ -1,0 +1,141 @@
+.notifications-list {
+  max-height: none;
+}
+
+.notification-card {
+  transition: all 0.3s ease;
+  border: 1px solid #e9ecef;
+}
+
+.notification-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.notification-card.unread {
+  border-left: 4px solid #007bff;
+  background-color: rgba(0, 123, 255, 0.02);
+}
+
+.notification-card.unread:hover {
+  background-color: rgba(0, 123, 255, 0.05);
+}
+
+.notification-type-icon {
+  font-size: 1.2rem;
+  margin-right: 0.5rem;
+}
+
+.notification-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.notification-stats .card {
+  transition: transform 0.2s ease;
+}
+
+.notification-stats .card:hover {
+  transform: translateY(-2px);
+}
+
+.filter-section {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.notification-header {
+  border-bottom: 2px solid #e9ecef;
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.notification-empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6c757d;
+}
+
+.notification-empty-state .icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .notification-card .d-flex {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  
+  .notification-actions {
+    justify-content: flex-end;
+  }
+  
+  .notification-stats .col-md-2 {
+    margin-bottom: 1rem;
+  }
+}
+
+/* Animation for new notifications */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.notification-card.new {
+  animation: slideIn 0.5s ease-out;
+}
+
+/* Badge styling */
+.badge {
+  font-size: 0.75rem;
+  padding: 0.375rem 0.75rem;
+}
+
+/* Button styling */
+.btn-sm {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+}
+
+/* Loading state */
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+/* Search and filter styling */
+.form-select, .form-control {
+  border-radius: 6px;
+  border: 1px solid #ced4da;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-select:focus, .form-control:focus {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Statistics cards */
+.stats-card {
+  border: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.stats-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+} 

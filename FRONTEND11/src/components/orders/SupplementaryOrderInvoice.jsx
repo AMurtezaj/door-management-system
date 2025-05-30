@@ -2,20 +2,20 @@ import React, { forwardRef, useEffect, useRef } from 'react';
 import { Card, Table, Row, Col, Container } from 'react-bootstrap';
 import { format } from 'date-fns';
 import QRCode from 'qrcode';
-import DimensionVisualization from './DimensionVisualization';
 
-const OrderInvoice = forwardRef(({ order, user }, ref) => {
+const SupplementaryOrderInvoice = forwardRef(({ supplementaryOrder, parentOrder, user }, ref) => {
   const qrCodeRef = useRef(null);
   
-  if (!order) return null;
+  if (!supplementaryOrder) return null;
 
   // Generate secure QR data
   const securityData = {
-    orderId: order.id,
+    supplementaryOrderId: supplementaryOrder.id,
+    parentOrderId: supplementaryOrder.parentOrderId,
     timestamp: new Date().toISOString(),
     printedBy: user?.name || 'Admin',
     role: user?.role || 'Admin',
-    verificationCode: `LD-${order.id}-${Date.now().toString(36)}`
+    verificationCode: `LD-SUP-${supplementaryOrder.id}-${Date.now().toString(36)}`
   };
 
   // Format the security data as a JSON string
@@ -32,15 +32,7 @@ const OrderInvoice = forwardRef(({ order, user }, ref) => {
     }
   }, [qrCodeValue, qrCodeRef]);
 
-  // Prepare dimension data for visualization
-  const dimensionData = {
-    gjatesia: order.gjatesia,
-    gjeresia: order.gjeresia,
-    profiliLarte: order.profiliLarte,
-    profiliPoshtem: order.profiliPoshtem,
-    gjatesiaFinale: order.gjatesiaFinale,
-    gjeresiaFinale: order.gjeresiaFinale
-  };
+  const remainingPayment = parseFloat(supplementaryOrder.cmimiTotal) - parseFloat(supplementaryOrder.kaparja || 0);
 
   return (
     <div ref={ref} className="invoice-container p-4">
@@ -59,10 +51,15 @@ const OrderInvoice = forwardRef(({ order, user }, ref) => {
                 </p>
               </Col>
               <Col md={6} className="text-end">
-                <h1 className="mb-4">FATURË</h1>
-                <h5>Nr. i Porosisë: #{order.id}</h5>
+                <h1 className="mb-4">FATURË - POROSI SHTESË</h1>
+                <h5>Nr. i Porosisë Shtesë: #{supplementaryOrder.id}</h5>
                 <p>Data: {format(new Date(), 'dd/MM/yyyy')}</p>
-                <p>Statusi: {order.statusi}</p>
+                <p>Statusi: {supplementaryOrder.statusi}</p>
+                {parentOrder && (
+                  <p className="text-info">
+                    <small>Lidhur me Porosinë Kryesore #{parentOrder.id}</small>
+                  </p>
+                )}
               </Col>
             </Row>
 
@@ -70,23 +67,24 @@ const OrderInvoice = forwardRef(({ order, user }, ref) => {
               <Col md={6}>
                 <h5>Klienti:</h5>
                 <p>
-                  <strong>{order.emriKlientit} {order.mbiemriKlientit}</strong><br />
-                  {order.vendi}<br />
-                  Tel: {order.numriTelefonit}
+                  <strong>{supplementaryOrder.emriKlientit} {supplementaryOrder.mbiemriKlientit}</strong><br />
+                  {supplementaryOrder.vendi}<br />
+                  Tel: {supplementaryOrder.numriTelefonit}
                 </p>
               </Col>
               <Col md={6} className="text-end">
                 <h5>Detajet e Dërgesës:</h5>
                 <p>
-                  Data e Realizimit: {order.dita ? format(new Date(order.dita), 'dd/MM/yyyy') : 'N/A'}<br />
-                  Dërguar nga: {order.sender || 'N/A'}<br />
-                  Montuar nga: {order.installer || 'N/A'}
+                  Lokacioni: {supplementaryOrder.vendi}<br />
+                  {parentOrder && (
+                    <>
+                      Data e Dërgesës: {parentOrder.dita ? format(new Date(parentOrder.dita), 'dd/MM/yyyy') : 'N/A'}<br />
+                      Dërguar me: Porosinë Kryesore #{parentOrder.id}
+                    </>
+                  )}
                 </p>
               </Col>
             </Row>
-
-            {/* Vizualizimi i Dimensioneve - vetëm nëse ka të dhëna */}
-            <DimensionVisualization dimensions={dimensionData} />
 
             <Table bordered className="mb-4">
               <thead>
@@ -98,26 +96,24 @@ const OrderInvoice = forwardRef(({ order, user }, ref) => {
               <tbody>
                 <tr>
                   <td>
-                    <strong>{order.tipiPorosise}</strong><br />
-                    {order.pershkrimi || 'Nuk ka përshkrim'}
+                    <strong>Produkt Shtesë</strong><br />
+                    {supplementaryOrder.pershkrimiProduktit}
                   </td>
-                  <td className="text-end">{parseFloat(order.cmimiTotal).toFixed(2)} €</td>
+                  <td className="text-end">{parseFloat(supplementaryOrder.cmimiTotal).toFixed(2)} €</td>
                 </tr>
               </tbody>
               <tfoot>
                 <tr>
                   <th>Kapari i Paguar</th>
-                  <td className="text-end">{parseFloat(order.kaparja || 0).toFixed(2)} €</td>
+                  <td className="text-end">{parseFloat(supplementaryOrder.kaparja || 0).toFixed(2)} €</td>
                 </tr>
                 <tr>
                   <th>Total i Mbetur</th>
-                  <td className="text-end">
-                    {(parseFloat(order.cmimiTotal) - parseFloat(order.kaparja || 0)).toFixed(2)} €
-                  </td>
+                  <td className="text-end">{remainingPayment.toFixed(2)} €</td>
                 </tr>
                 <tr>
                   <th>Totali</th>
-                  <td className="text-end"><strong>{parseFloat(order.cmimiTotal).toFixed(2)} €</strong></td>
+                  <td className="text-end"><strong>{parseFloat(supplementaryOrder.cmimiTotal).toFixed(2)} €</strong></td>
                 </tr>
               </tfoot>
             </Table>
@@ -126,13 +122,24 @@ const OrderInvoice = forwardRef(({ order, user }, ref) => {
               <Col md={8}>
                 <h5>Shënime:</h5>
                 <p>
-                  Faleminderit për besimin! Porositë duhet të paguhen para ose gjatë dorëzimit.
-                  Për çdo pyetje rreth faturës, ju lutem kontaktoni shitësin tuaj: {order.shitesi}
+                  Faleminderit për besimin! Kjo porosi shtesë do të dërgohet së bashku me porosinë kryesore 
+                  për të njëjtin lokacion.
                 </p>
                 <p>
-                  <strong>Mënyra e Pagesës: </strong>{order.menyraPageses === 'kesh' ? 'Kesh' : 'Bankë'}<br />
-                  <strong>Pagesa e Përfunduar: </strong>{order.isPaymentDone ? 'Po' : 'Jo'}
+                  <strong>Mënyra e Pagesës: </strong>{supplementaryOrder.menyraPageses === 'kesh' ? 'Kesh' : 'Bankë'}<br />
+                  <strong>Pagesa e Përfunduar: </strong>{supplementaryOrder.isPaymentDone ? 'Po' : 'Jo'}<br />
+                  {supplementaryOrder.kaparaReceiver && (
+                    <>
+                      <strong>Kaparja u mor nga: </strong>{supplementaryOrder.kaparaReceiver}<br />
+                    </>
+                  )}
                 </p>
+                {parentOrder && (
+                  <p className="text-info">
+                    <strong>Shënim:</strong> Kjo porosi shtesë do të dërgohet së bashku me porosinë kryesore 
+                    #{parentOrder.id} ({parentOrder.tipiPorosise}) në të njëjtin transport.
+                  </p>
+                )}
                 <div className="mt-4">
                   <p><strong>Nënshkrimi:</strong></p>
                   <div className="border-bottom border-dark" style={{ width: '200px', height: '40px' }}></div>
@@ -156,4 +163,4 @@ const OrderInvoice = forwardRef(({ order, user }, ref) => {
   );
 });
 
-export default OrderInvoice; 
+export default SupplementaryOrderInvoice; 

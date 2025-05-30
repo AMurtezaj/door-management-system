@@ -5,10 +5,12 @@ import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import UserManagementPage from './pages/UserManagementPage';
 import ProfilePage from './pages/ProfilePage';
+import NotificationsPage from './pages/NotificationsPage';
 import OrderList from './components/orders/OrderList';
 import OrderForm from './components/orders/OrderForm';
 import OrderEdit from './components/orders/OrderEdit';
 import CapacityManagement from './components/orders/CapacityManagement';
+import AdditionalOrdersPage from './components/orders/AdditionalOrdersPage';
 import DebtManagementPage from './pages/DebtManagementPage';
 import MeasurementStatusPage from './pages/MeasurementStatusPage';
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -32,11 +34,15 @@ const App = () => {
           <Route path="/orders" element={<OrderList />} />
           <Route path="/orders/new" element={<OrderForm />} />
           <Route path="/orders/edit/:id" element={<OrderEdit />} />
+          <Route path="/orders/additional" element={<AdditionalOrdersPage />} />
           <Route path="/orders/capacity" element={<CapacityManagement />} />
           
           {/* Specialized Order Features */}
           <Route path="/debt-management" element={<DebtManagementPage />} />
           <Route path="/measurement-status" element={<MeasurementStatusPage />} />
+          
+          {/* Notifications */}
+          <Route path="/notifications" element={<NotificationsPage />} />
           
           {/* User Profile (all users) */}
           <Route path="/profile" element={<ProfilePage />} />

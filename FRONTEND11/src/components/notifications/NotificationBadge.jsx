@@ -14,10 +14,14 @@ const NotificationBadge = () => {
   // Fetch unread count
   const fetchUnreadCount = async () => {
     try {
+      console.log('🔍 Fetching unread count...');
       const data = await getUnreadCount();
-      setUnreadCount(data.count);
+      console.log('📊 Unread count response:', data);
+      setUnreadCount(data.count || 0);
     } catch (error) {
-      console.error('Failed to fetch notification count:', error);
+      console.error('❌ Failed to fetch notification count:', error);
+      console.error('Error details:', error.response?.data);
+      setUnreadCount(0);
     }
   };
   
@@ -26,10 +30,14 @@ const NotificationBadge = () => {
     if (showDropdown) {
       setLoading(true);
       try {
+        console.log('🔍 Fetching notifications...');
         const data = await getAllNotifications();
+        console.log('📋 Notifications response:', data);
         setNotifications(data.slice(0, 5)); // Show only 5 recent notifications
       } catch (error) {
-        console.error('Failed to fetch notifications:', error);
+        console.error('❌ Failed to fetch notifications:', error);
+        console.error('Error details:', error.response?.data);
+        setNotifications([]);
       } finally {
         setLoading(false);
       }
@@ -58,7 +66,7 @@ const NotificationBadge = () => {
       await markAsRead(id);
       setNotifications(prevNotifications => 
         prevNotifications.map(notification => 
-          notification.id === id ? { ...notification, read: true } : notification
+          notification.id === id ? { ...notification, isRead: true } : notification
         )
       );
       fetchUnreadCount();
@@ -72,7 +80,7 @@ const NotificationBadge = () => {
     try {
       await markAllAsRead();
       setNotifications(prevNotifications => 
-        prevNotifications.map(notification => ({ ...notification, read: true }))
+        prevNotifications.map(notification => ({ ...notification, isRead: true }))
       );
       setUnreadCount(0);
     } catch (error) {
@@ -128,17 +136,20 @@ const NotificationBadge = () => {
                 key={notification.id} 
                 as={Link}
                 to={notification.link || '/notifications'}
-                className={`notification-item ${!notification.read ? 'unread' : ''}`}
+                className={`notification-item ${!notification.isRead ? 'unread' : ''}`}
               >
                 <div className="d-flex align-items-start">
                   <div className="flex-grow-1">
-                    <div className="notification-title">{notification.title}</div>
+                    <div className="notification-title">
+                      {notification.type === 'urgjent' ? '🚨' : notification.type === 'paralajmërim' ? '⚠️' : 'ℹ️'} 
+                      {notification.type.charAt(0).toUpperCase() + notification.type.slice(1)}
+                    </div>
                     <div className="notification-text small text-muted">{notification.message}</div>
                     <div className="notification-time small text-muted">
                       {new Date(notification.createdAt).toLocaleTimeString()} - {new Date(notification.createdAt).toLocaleDateString()}
                     </div>
                   </div>
-                  {!notification.read && (
+                  {!notification.isRead && (
                     <button 
                       className="btn btn-sm text-primary mark-read-btn"
                       onClick={(e) => handleMarkAsRead(notification.id, e)}

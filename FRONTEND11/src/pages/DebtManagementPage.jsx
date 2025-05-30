@@ -2,13 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Table, Badge, Form, InputGroup, Button, Spinner, Alert, Tabs, Tab } from 'react-bootstrap';
 import { Search, CurrencyExchange } from 'react-bootstrap-icons';
 import { Link } from 'react-router-dom';
-import { getCashDebtOrders, getBankDebtOrders, updatePaymentStatus, getDebtStatistics } from '../services/orderService';
+import { getCashDebtOrders, getBankDebtOrders, updatePaymentStatus, getDebtStatistics, getSupplementaryCashDebtOrders, getSupplementaryBankDebtOrders } from '../services/orderService';
+import { updateSupplementaryOrderPaymentStatus } from '../services/supplementaryOrderService';
 import { format } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
 
 const DebtManagementPage = () => {
   const [cashDebts, setCashDebts] = useState([]);
   const [bankDebts, setBankDebts] = useState([]);
+  const [suppCashDebts, setSuppCashDebts] = useState([]);
+  const [suppBankDebts, setSuppBankDebts] = useState([]);
   const [cashLoading, setCashLoading] = useState(true);
   const [bankLoading, setBankLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
@@ -42,6 +45,8 @@ const DebtManagementPage = () => {
       await Promise.all([
         fetchCashDebts(),
         fetchBankDebts(),
+        fetchSupplementaryCashDebts(),
+        fetchSupplementaryBankDebts(),
         fetchDebtStatistics()
       ]);
       
@@ -88,6 +93,36 @@ const DebtManagementPage = () => {
     }
   };
 
+  // Fetch supplementary cash debts
+  const fetchSupplementaryCashDebts = async () => {
+    try {
+      console.log('Fetching supplementary cash debts...');
+      const data = await getSupplementaryCashDebtOrders();
+      console.log(`Fetched ${data.length} supplementary cash debts`);
+      setSuppCashDebts(data);
+      return data;
+    } catch (error) {
+      console.error('Error fetching supplementary cash debts:', error);
+      setError('Gabim gjatë ngarkimit të borxheve shtesë në kesh');
+      throw error;
+    }
+  };
+
+  // Fetch supplementary bank debts
+  const fetchSupplementaryBankDebts = async () => {
+    try {
+      console.log('Fetching supplementary bank debts...');
+      const data = await getSupplementaryBankDebtOrders();
+      console.log(`Fetched ${data.length} supplementary bank debts`);
+      setSuppBankDebts(data);
+      return data;
+    } catch (error) {
+      console.error('Error fetching supplementary bank debts:', error);
+      setError('Gabim gjatë ngarkimit të borxheve shtesë në bankë');
+      throw error;
+    }
+  };
+
   // Fetch debt statistics
   const fetchDebtStatistics = async () => {
     try {
@@ -107,18 +142,32 @@ const DebtManagementPage = () => {
   };
 
   // Handle marking debt as paid
-  const handleMarkAsPaid = async (id, debtType) => {
+  const handleMarkAsPaid = async (id, debtType, isSupplementary = false) => {
     try {
       setError('');
-      console.log(`Marking order ${id} as paid (${debtType})...`);
-      await updatePaymentStatus(id, true);
-      console.log(`Order ${id} marked as paid successfully`);
+      console.log(`Marking ${isSupplementary ? 'supplementary ' : ''}order ${id} as paid (${debtType})...`);
       
-      // Update the appropriate list based on debt type
-      if (debtType === 'kesh') {
-        setCashDebts(prev => prev.filter(debt => debt.id !== id));
+      if (isSupplementary) {
+        await updateSupplementaryOrderPaymentStatus(id, true);
       } else {
-        setBankDebts(prev => prev.filter(debt => debt.id !== id));
+        await updatePaymentStatus(id, true);
+      }
+      
+      console.log(`${isSupplementary ? 'Supplementary ' : ''}Order ${id} marked as paid successfully`);
+      
+      // Update the appropriate list based on debt type and order type
+      if (debtType === 'kesh') {
+        if (isSupplementary) {
+          setSuppCashDebts(prev => prev.filter(debt => debt.id !== id));
+        } else {
+          setCashDebts(prev => prev.filter(debt => debt.id !== id));
+        }
+      } else {
+        if (isSupplementary) {
+          setSuppBankDebts(prev => prev.filter(debt => debt.id !== id));
+        } else {
+          setBankDebts(prev => prev.filter(debt => debt.id !== id));
+        }
       }
       
       // Refresh statistics
@@ -142,8 +191,26 @@ const DebtManagementPage = () => {
   };
 
   // Render debt table
-  const renderDebtTable = (debts, debtType, loading) => {
-    const filteredDebts = filterDebts(debts);
+  const renderDebtTable = (debts, suppDebts, debtType, loading) => {
+    // Combine main orders and supplementary orders
+    const combinedDebts = [
+      ...debts.map(debt => ({ ...debt, isSupplementary: false })),
+      ...suppDebts.map(suppDebt => ({ 
+        ...suppDebt, 
+        isSupplementary: true,
+        // Map supplementary order fields to match main order structure
+        emriKlientit: suppDebt.emriKlientit,
+        mbiemriKlientit: suppDebt.mbiemriKlientit,
+        numriTelefonit: suppDebt.numriTelefonit,
+        vendi: suppDebt.vendi,
+        cmimiTotal: suppDebt.cmimiTotal,
+        kaparja: suppDebt.kaparja,
+        tipiPorosise: 'Porosi Shtesë',
+        dita: suppDebt.ParentOrder?.OrderDetails?.dita || suppDebt.createdAt
+      }))
+    ];
+    
+    const filteredDebts = filterDebts(combinedDebts);
     
     if (loading) {
       return (
@@ -177,38 +244,70 @@ const DebtManagementPage = () => {
         </thead>
         <tbody>
           {filteredDebts.map(debt => {
-            const remaining = parseFloat(debt.cmimiTotal) - parseFloat(debt.kaparja);
+            const remaining = debt.isSupplementary ? 
+              parseFloat(debt.pagesaMbetur || 0) : 
+              parseFloat(debt.cmimiTotal) - parseFloat(debt.kaparja);
+            
             return (
-              <tr key={debt.id}>
+              <tr key={`${debt.isSupplementary ? 'supp' : 'main'}-${debt.id}`}>
                 <td>
-                  <Link to={`/orders/edit/${debt.id}`} className="text-decoration-none fw-bold">
-                    {debt.emriKlientit} {debt.mbiemriKlientit}
-                  </Link>
-                  <div><small className="text-muted">{debt.numriTelefonit}</small></div>
-                  <div><small className="text-muted">{debt.vendi}</small></div>
+                  {debt.isSupplementary ? (
+                    <div>
+                      <span className="fw-bold">{debt.emriKlientit} {debt.mbiemriKlientit}</span>
+                      <Badge bg="info" className="ms-2" size="sm">Shtesë</Badge>
+                      <div><small className="text-muted">{debt.numriTelefonit}</small></div>
+                      <div><small className="text-muted">{debt.vendi}</small></div>
+                      <div><small className="text-muted">Porosia Kryesore: #{debt.parentOrderId}</small></div>
+                    </div>
+                  ) : (
+                    <div>
+                      <Link to={`/orders/edit/${debt.id}`} className="text-decoration-none fw-bold">
+                        {debt.emriKlientit} {debt.mbiemriKlientit}
+                      </Link>
+                      <div><small className="text-muted">{debt.numriTelefonit}</small></div>
+                      <div><small className="text-muted">{debt.vendi}</small></div>
+                    </div>
+                  )}
                 </td>
                 <td>{debt.dita ? format(new Date(debt.dita), 'dd/MM/yyyy') : 'N/A'}</td>
-                <td>{debt.tipiPorosise}</td>
+                <td>
+                  {debt.isSupplementary ? (
+                    <div>
+                      <Badge bg="secondary">Porosi Shtesë</Badge>
+                      <div><small className="text-muted">{debt.pershkrimiProduktit}</small></div>
+                    </div>
+                  ) : debt.tipiPorosise}
+                </td>
                 <td>{parseFloat(debt.cmimiTotal).toFixed(2)} €</td>
-                <td>{parseFloat(debt.kaparja).toFixed(2)} €</td>
+                <td>{parseFloat(debt.kaparja || 0).toFixed(2)} €</td>
                 <td><Badge bg="danger">{remaining.toFixed(2)} €</Badge></td>
                 <td>
                   <div className="d-flex gap-2">
                     <Button 
                       variant="success" 
                       size="sm" 
-                      onClick={() => handleMarkAsPaid(debt.id, debtType)}
+                      onClick={() => handleMarkAsPaid(debt.id, debtType, debt.isSupplementary)}
                     >
                       Paguaj
                     </Button>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      as={Link}
-                      to={`/orders/edit/${debt.id}`}
-                    >
-                      Detaje
-                    </Button>
+                    {debt.isSupplementary ? (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => window.open(`/orders/additional`, '_blank')}
+                      >
+                        Detaje
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        as={Link}
+                        to={`/orders/edit/${debt.id}`}
+                      >
+                        Detaje
+                      </Button>
+                    )}
                   </div>
                 </td>
               </tr>
@@ -221,8 +320,8 @@ const DebtManagementPage = () => {
             <td colSpan="2">
               <Badge bg="danger" style={{ fontSize: '1rem' }}>
                 {debtType === 'kesh' ? 
-                  parseFloat(statistics.totalCashDebt).toFixed(2) : 
-                  parseFloat(statistics.totalBankDebt).toFixed(2)} €
+                  parseFloat(statistics.totalCombinedCashDebt || 0).toFixed(2) : 
+                  parseFloat(statistics.totalCombinedBankDebt || 0).toFixed(2)} €
               </Badge>
             </td>
           </tr>
@@ -286,16 +385,36 @@ const DebtManagementPage = () => {
         <Col md={3}>
           <Card className="text-center shadow-sm h-100">
             <Card.Body>
-              <h2 className="mb-0">{statsLoading ? <Spinner size="sm" animation="border" /> : statistics.cashDebtCount}</h2>
+              <h2 className="mb-0">
+                {statsLoading ? <Spinner size="sm" animation="border" /> : 
+                  (statistics.cashDebtCount + statistics.suppCashDebtCount)}
+              </h2>
               <small>Borxhe në Kesh</small>
+              {!statsLoading && (
+                <div className="mt-1">
+                  <small className="text-muted">
+                    Kryesore: {statistics.cashDebtCount} | Shtesë: {statistics.suppCashDebtCount}
+                  </small>
+                </div>
+              )}
             </Card.Body>
           </Card>
         </Col>
         <Col md={3}>
           <Card className="text-center shadow-sm h-100">
             <Card.Body>
-              <h2 className="mb-0">{statsLoading ? <Spinner size="sm" animation="border" /> : statistics.bankDebtCount}</h2>
+              <h2 className="mb-0">
+                {statsLoading ? <Spinner size="sm" animation="border" /> : 
+                  (statistics.bankDebtCount + statistics.suppBankDebtCount)}
+              </h2>
               <small>Borxhe në Bankë</small>
+              {!statsLoading && (
+                <div className="mt-1">
+                  <small className="text-muted">
+                    Kryesore: {statistics.bankDebtCount} | Shtesë: {statistics.suppBankDebtCount}
+                  </small>
+                </div>
+              )}
             </Card.Body>
           </Card>
         </Col>
@@ -346,11 +465,11 @@ const DebtManagementPage = () => {
             onSelect={(k) => setActiveTab(k)}
             className="border-bottom mb-0"
           >
-            <Tab eventKey="cash" title={`Borxhe në Kesh (${statistics.cashDebtCount})`}>
-              {renderDebtTable(cashDebts, 'kesh', cashLoading)}
+            <Tab eventKey="cash" title={`Borxhe në Kesh (${(statistics.cashDebtCount || 0) + (statistics.suppCashDebtCount || 0)})`}>
+              {renderDebtTable(cashDebts, suppCashDebts, 'kesh', cashLoading)}
             </Tab>
-            <Tab eventKey="bank" title={`Borxhe në Bankë (${statistics.bankDebtCount})`}>
-              {renderDebtTable(bankDebts, 'banke', bankLoading)}
+            <Tab eventKey="bank" title={`Borxhe në Bankë (${(statistics.bankDebtCount || 0) + (statistics.suppBankDebtCount || 0)})`}>
+              {renderDebtTable(bankDebts, suppBankDebts, 'banke', bankLoading)}
             </Tab>
           </Tabs>
         </Card.Body>

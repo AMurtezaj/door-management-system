@@ -1,4 +1,4 @@
-const { Order, Customer, Payment, OrderDetails } = require('../models');
+const { Order, Customer, Payment, OrderDetails, SupplementaryOrder } = require('../models');
 const DailyCapacity = require('../models/DailyCapacity');
 const notificationController = require('./notificationController');
 const orderService = require('../services/orderService');
@@ -96,7 +96,8 @@ const orderController = {
                 include: [
                     { model: Customer },
                     { model: Payment },
-                    { model: OrderDetails }
+                    { model: OrderDetails, as: 'OrderDetail' },
+                    { model: SupplementaryOrder }
                 ],
                 order: [['createdAt', 'DESC']]
             });
@@ -113,7 +114,8 @@ const orderController = {
                 include: [
                     { model: Customer },
                     { model: Payment },
-                    { model: OrderDetails, where: { dita: req.params.dita } }
+                    { model: OrderDetails, as: 'OrderDetail', where: { dita: req.params.dita } },
+                    { model: SupplementaryOrder }
                 ],
                 order: [['createdAt', 'DESC']]
             });
@@ -130,7 +132,8 @@ const orderController = {
                 include: [
                     { model: Customer },
                     { model: Payment },
-                    { model: OrderDetails }
+                    { model: OrderDetails, as: 'OrderDetail' },
+                    { model: SupplementaryOrder }
                 ]
             });
             if (!order) {
@@ -146,6 +149,10 @@ const orderController = {
     updateOrder: async (req, res) => {
         try {
             const order = await orderService.updateCompleteOrder(req.params.id, req.body);
+            
+            // Create notification for the updated order
+            await notificationController.createOrderNotification(order.id);
+            
             res.json(order);
         } catch (error) {
             console.error('Error updating order:', error);
@@ -160,6 +167,10 @@ const orderController = {
             const { isPaymentDone } = req.body;
 
             const order = await orderService.updatePaymentStatus(id, isPaymentDone);
+            
+            // Create notification for the payment status change
+            await notificationController.createOrderNotification(order.id);
+            
             res.json(order);
         } catch (error) {
             console.error('Error updating payment status:', error);
@@ -174,7 +185,8 @@ const orderController = {
                 include: [
                     { model: Customer },
                     { model: Payment, where: { debtType: 'kesh', isPaymentDone: false } },
-                    { model: OrderDetails, where: { statusi: 'borxh' } }
+                    { model: OrderDetails, as: 'OrderDetail', where: { statusi: 'borxh' } },
+                    { model: SupplementaryOrder }
                 ],
                 order: [['createdAt', 'DESC']]
             });
@@ -192,7 +204,8 @@ const orderController = {
                 include: [
                     { model: Customer },
                     { model: Payment, where: { debtType: 'banke', isPaymentDone: false } },
-                    { model: OrderDetails, where: { statusi: 'borxh' } }
+                    { model: OrderDetails, as: 'OrderDetail', where: { statusi: 'borxh' } },
+                    { model: SupplementaryOrder }
                 ],
                 order: [['createdAt', 'DESC']]
             });
@@ -206,7 +219,7 @@ const orderController = {
     // Get debt statistics
     getDebtStatistics: async (req, res) => {
         try {
-            // Count cash debts
+            // Count cash debts from main orders
             const cashDebtCount = await Payment.count({
                 where: {
                     debtType: 'kesh',
@@ -214,7 +227,7 @@ const orderController = {
                 }
             });
 
-            // Count bank debts
+            // Count bank debts from main orders
             const bankDebtCount = await Payment.count({
                 where: {
                     debtType: 'banke',
@@ -222,7 +235,23 @@ const orderController = {
                 }
             });
 
-            // Sum cash debt amounts
+            // Count cash debts from supplementary orders
+            const suppCashDebtCount = await SupplementaryOrder.count({
+                where: {
+                    menyraPageses: 'kesh',
+                    isPaymentDone: false
+                }
+            });
+
+            // Count bank debts from supplementary orders
+            const suppBankDebtCount = await SupplementaryOrder.count({
+                where: {
+                    menyraPageses: 'banke',
+                    isPaymentDone: false
+                }
+            });
+
+            // Sum cash debt amounts from main orders
             const payments = await Payment.findAll({
                 where: {
                     debtType: 'kesh',
@@ -231,12 +260,12 @@ const orderController = {
                 attributes: ['cmimiTotal', 'kaparja']
             });
 
-            // Calculate total cash debt
+            // Calculate total cash debt from main orders
             const totalCashDebt = payments.reduce((total, payment) => {
                 return total + (parseFloat(payment.cmimiTotal) - parseFloat(payment.kaparja));
             }, 0);
 
-            // Sum bank debt amounts
+            // Sum bank debt amounts from main orders
             const bankPayments = await Payment.findAll({
                 where: {
                     debtType: 'banke',
@@ -245,18 +274,55 @@ const orderController = {
                 attributes: ['cmimiTotal', 'kaparja']
             });
 
-            // Calculate total bank debt
+            // Calculate total bank debt from main orders
             const totalBankDebt = bankPayments.reduce((total, payment) => {
                 return total + (parseFloat(payment.cmimiTotal) - parseFloat(payment.kaparja));
             }, 0);
 
+            // Sum cash debt amounts from supplementary orders
+            const suppCashDebts = await SupplementaryOrder.findAll({
+                where: {
+                    menyraPageses: 'kesh',
+                    isPaymentDone: false
+                },
+                attributes: ['pagesaMbetur']
+            });
+
+            const totalSuppCashDebt = suppCashDebts.reduce((total, suppOrder) => {
+                return total + parseFloat(suppOrder.pagesaMbetur || 0);
+            }, 0);
+
+            // Sum bank debt amounts from supplementary orders
+            const suppBankDebts = await SupplementaryOrder.findAll({
+                where: {
+                    menyraPageses: 'banke',
+                    isPaymentDone: false
+                },
+                attributes: ['pagesaMbetur']
+            });
+
+            const totalSuppBankDebt = suppBankDebts.reduce((total, suppOrder) => {
+                return total + parseFloat(suppOrder.pagesaMbetur || 0);
+            }, 0);
+
             const statistics = {
+                // Main order debts
                 cashDebtCount,
                 bankDebtCount,
-                totalDebtCount: cashDebtCount + bankDebtCount,
                 totalCashDebt,
                 totalBankDebt,
-                totalDebt: totalCashDebt + totalBankDebt
+                
+                // Supplementary order debts
+                suppCashDebtCount,
+                suppBankDebtCount,
+                totalSuppCashDebt,
+                totalSuppBankDebt,
+                
+                // Combined totals
+                totalDebtCount: cashDebtCount + bankDebtCount + suppCashDebtCount + suppBankDebtCount,
+                totalCombinedCashDebt: totalCashDebt + totalSuppCashDebt,
+                totalCombinedBankDebt: totalBankDebt + totalSuppBankDebt,
+                totalDebt: totalCashDebt + totalBankDebt + totalSuppCashDebt + totalSuppBankDebt
             };
 
             res.json(statistics);
@@ -287,13 +353,86 @@ const orderController = {
                 include: [
                     { model: Customer },
                     { model: Payment },
-                    { model: OrderDetails }
+                    { model: OrderDetails, as: 'OrderDetail' },
+                    { model: SupplementaryOrder }
                 ]
             });
 
             res.json(order);
         } catch (error) {
             res.status(400).json({ message: 'Diçka shkoi keq!' });
+        }
+    },
+
+    // Update door dimensions
+    updateDimensions: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { gjatesia, gjeresia, profiliLarte, profiliPoshtem } = req.body;
+
+            const orderDetails = await OrderDetails.findOne({ where: { orderId: id } });
+            if (!orderDetails) {
+                return res.status(404).json({ message: 'Porosia nuk u gjet!' });
+            }
+
+            // Validate numeric values
+            const validateNumber = (value, fieldName) => {
+                if (value !== undefined && value !== null && value !== '') {
+                    const num = parseFloat(value);
+                    if (isNaN(num) || num < 0) {
+                        throw new Error(`${fieldName} duhet të jetë një numër pozitiv!`);
+                    }
+                    return num;
+                }
+                return undefined;
+            };
+
+            const validatedData = {};
+            if (gjatesia !== undefined) validatedData.gjatesia = validateNumber(gjatesia, 'Gjatësia');
+            if (gjeresia !== undefined) validatedData.gjeresia = validateNumber(gjeresia, 'Gjerësia');
+            if (profiliLarte !== undefined) validatedData.profiliLarte = validateNumber(profiliLarte, 'Profili i lartë');
+            if (profiliPoshtem !== undefined) validatedData.profiliPoshtem = validateNumber(profiliPoshtem, 'Profili i poshtëm');
+
+            await orderDetails.update(validatedData);
+
+            // Reload to get the updated data with virtual fields
+            const updatedOrderDetails = await OrderDetails.findOne({ where: { orderId: id } });
+            const calculations = updatedOrderDetails.getDimensionCalculations();
+
+            const order = await Order.findByPk(id, {
+                include: [
+                    { model: Customer },
+                    { model: Payment },
+                    { model: OrderDetails, as: 'OrderDetail' },
+                    { model: SupplementaryOrder }
+                ]
+            });
+
+            res.json({
+                order,
+                dimensionCalculations: calculations
+            });
+        } catch (error) {
+            console.error('Error updating dimensions:', error);
+            res.status(400).json({ message: error.message || 'Diçka shkoi keq gjatë përditësimit të dimensioneve!' });
+        }
+    },
+
+    // Get dimension calculations for an order
+    getDimensionCalculations: async (req, res) => {
+        try {
+            const { id } = req.params;
+
+            const orderDetails = await OrderDetails.findOne({ where: { orderId: id } });
+            if (!orderDetails) {
+                return res.status(404).json({ message: 'Porosia nuk u gjet!' });
+            }
+
+            const calculations = orderDetails.getDimensionCalculations();
+            res.json(calculations);
+        } catch (error) {
+            console.error('Error getting dimension calculations:', error);
+            res.status(400).json({ message: 'Diçka shkoi keq gjatë llogaritjes së dimensioneve!' });
         }
     },
     
@@ -317,7 +456,8 @@ const orderController = {
                 include: [
                     { model: Customer },
                     { model: Payment },
-                    { model: OrderDetails }
+                    { model: OrderDetails, as: 'OrderDetail' },
+                    { model: SupplementaryOrder }
                 ]
             });
 
@@ -336,7 +476,8 @@ const orderController = {
                 include: [
                     { model: Customer },
                     { model: Payment },
-                    { model: OrderDetails, where: { statusiMatjes } }
+                    { model: OrderDetails, as: 'OrderDetail', where: { statusiMatjes } },
+                    { model: SupplementaryOrder }
                 ],
                 order: [['createdAt', 'DESC']]
             });
@@ -357,6 +498,54 @@ const orderController = {
             await order.destroy(); // This will cascade delete related records due to our relationship settings
             res.json({ message: 'Porosia u fshi me sukses!' });
         } catch (error) {
+            res.status(400).json({ message: 'Diçka shkoi keq!' });
+        }
+    },
+
+    // Get supplementary order cash debts
+    getSupplementaryCashDebtOrders: async (req, res) => {
+        try {
+            const supplementaryOrders = await SupplementaryOrder.findAll({
+                where: {
+                    menyraPageses: 'kesh',
+                    isPaymentDone: false
+                },
+                include: [
+                    {
+                        model: Order,
+                        as: 'ParentOrder',
+                        include: [{ model: Customer }]
+                    }
+                ],
+                order: [['createdAt', 'DESC']]
+            });
+            res.json(supplementaryOrders);
+        } catch (error) {
+            console.error('Error fetching supplementary cash debt orders:', error);
+            res.status(400).json({ message: 'Diçka shkoi keq!' });
+        }
+    },
+
+    // Get supplementary order bank debts
+    getSupplementaryBankDebtOrders: async (req, res) => {
+        try {
+            const supplementaryOrders = await SupplementaryOrder.findAll({
+                where: {
+                    menyraPageses: 'banke',
+                    isPaymentDone: false
+                },
+                include: [
+                    {
+                        model: Order,
+                        as: 'ParentOrder',
+                        include: [{ model: Customer }]
+                    }
+                ],
+                order: [['createdAt', 'DESC']]
+            });
+            res.json(supplementaryOrders);
+        } catch (error) {
+            console.error('Error fetching supplementary bank debt orders:', error);
             res.status(400).json({ message: 'Diçka shkoi keq!' });
         }
     }

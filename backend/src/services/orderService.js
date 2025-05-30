@@ -1,4 +1,4 @@
-const { sequelize, Order, Customer, Payment, OrderDetails } = require('../models');
+const { sequelize, Order, Customer, Payment, OrderDetails, SupplementaryOrder } = require('../models');
 
 const orderService = {
     createCompleteOrder: async (orderData) => {
@@ -63,7 +63,11 @@ const orderService = {
                 statusi: statusi,
                 eshtePrintuar: orderData.eshtePrintuar,
                 kaVule: orderData.kaVule,
-                statusiMatjes: orderData.statusiMatjes || 'e pamatur'
+                statusiMatjes: orderData.statusiMatjes || 'e pamatur',
+                gjatesia: orderData.gjatesia,
+                gjeresia: orderData.gjeresia,
+                profiliLarte: orderData.profiliLarte || 0,
+                profiliPoshtem: orderData.profiliPoshtem || 0
             }, { transaction: t });
 
             return order;
@@ -143,7 +147,11 @@ const orderService = {
                         statusi: orderData.statusi !== undefined ? orderData.statusi : statusi,
                         eshtePrintuar: orderData.eshtePrintuar !== undefined ? orderData.eshtePrintuar : orderDetails.eshtePrintuar,
                         kaVule: orderData.kaVule !== undefined ? orderData.kaVule : orderDetails.kaVule,
-                        statusiMatjes: orderData.statusiMatjes !== undefined ? orderData.statusiMatjes : orderDetails.statusiMatjes
+                        statusiMatjes: orderData.statusiMatjes !== undefined ? orderData.statusiMatjes : orderDetails.statusiMatjes,
+                        gjatesia: orderData.gjatesia !== undefined ? orderData.gjatesia : orderDetails.gjatesia,
+                        gjeresia: orderData.gjeresia !== undefined ? orderData.gjeresia : orderDetails.gjeresia,
+                        profiliLarte: orderData.profiliLarte !== undefined ? orderData.profiliLarte : orderDetails.profiliLarte,
+                        profiliPoshtem: orderData.profiliPoshtem !== undefined ? orderData.profiliPoshtem : orderDetails.profiliPoshtem
                     }, { transaction: t });
                 }
             }
@@ -199,7 +207,8 @@ async function getCompleteOrderById(id) {
         include: [
             { model: Customer },
             { model: Payment },
-            { model: OrderDetails }
+            { model: OrderDetails, as: 'OrderDetail' },
+            { model: SupplementaryOrder }
         ]
     });
 }

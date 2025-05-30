@@ -4,6 +4,7 @@ const Customer = require('./Customer');
 const Payment = require('./Payment');
 const OrderDetails = require('./OrderDetails');
 const Notification = require('./Notification');
+const SupplementaryOrder = require('./SupplementaryOrder');
 
 // Order to Customer relationship (many-to-one)
 Order.belongsTo(Customer, { foreignKey: 'customerId' });
@@ -21,11 +22,16 @@ OrderDetails.belongsTo(Order, { foreignKey: 'orderId' });
 Order.hasMany(Notification, { foreignKey: 'orderId' });
 Notification.belongsTo(Order, { foreignKey: 'orderId' });
 
+// Order to SupplementaryOrder relationship (one-to-many)
+Order.hasMany(SupplementaryOrder, { foreignKey: 'parentOrderId', onDelete: 'CASCADE' });
+SupplementaryOrder.belongsTo(Order, { foreignKey: 'parentOrderId', as: 'ParentOrder' });
+
 module.exports = {
     sequelize,
     Order,
     Customer,
     Payment,
     OrderDetails,
-    Notification
+    Notification,
+    SupplementaryOrder
 }; 

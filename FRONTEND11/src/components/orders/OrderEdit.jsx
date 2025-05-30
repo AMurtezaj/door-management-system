@@ -33,7 +33,11 @@ const OrderEdit = () => {
     isPaymentDone: false,
     kaVule: false,
     eshtePrintuar: false,
-    statusiMatjes: 'e pamatur'
+    statusiMatjes: 'e pamatur',
+    gjatesia: '',
+    gjeresia: '',
+    profiliLarte: '0',
+    profiliPoshtem: '0'
   });
   
   // Calculated field
@@ -121,7 +125,7 @@ const OrderEdit = () => {
   return (
     <Container className="mt-4">
       <Card>
-        <Card.Header>
+        <Card.Header className="d-flex justify-content-between align-items-center">
           <h3>Edito Porosinë #{id}</h3>
         </Card.Header>
         <Card.Body>
@@ -254,7 +258,7 @@ const OrderEdit = () => {
               
               <Col md={4}>
                 <Form.Group className="mb-3">
-                  <Form.Label>Mori Kaparën</Form.Label>
+                  <Form.Label>Personi që Mori Kaparën</Form.Label>
                   <Form.Control
                     type="text"
                     name="kaparaReceiver"
@@ -362,6 +366,108 @@ const OrderEdit = () => {
                 </Form.Group>
               </Col>
             </Row>
+
+            {/* Seksioni i Dimensioneve të Derës */}
+            <Card className="mb-4">
+              <Card.Header>
+                <h5 className="mb-0">📏 Dimensionet e Derës</h5>
+                <small className="text-muted">Këto fusha janë opsionale dhe përdoren për printimin e faturës</small>
+              </Card.Header>
+              <Card.Body>
+                <Row>
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Gjatësia (cm)</Form.Label>
+                      <Form.Control
+                        type="number"
+                        step="0.01"
+                        name="gjatesia"
+                        value={formData.gjatesia || ''}
+                        onChange={handleChange}
+                        placeholder="Shkruani gjatësinë e derës"
+                      />
+                      <Form.Text className="text-muted">
+                        Gjatësia e matur e derës
+                      </Form.Text>
+                    </Form.Group>
+                  </Col>
+                  
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Gjerësia (cm)</Form.Label>
+                      <Form.Control
+                        type="number"
+                        step="0.01"
+                        name="gjeresia"
+                        value={formData.gjeresia || ''}
+                        onChange={handleChange}
+                        placeholder="Shkruani gjerësinë e derës"
+                      />
+                      <Form.Text className="text-muted">
+                        Gjerësia e matur e derës
+                      </Form.Text>
+                    </Form.Group>
+                  </Col>
+                </Row>
+                
+                <Row>
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Profili i Lartë (cm)</Form.Label>
+                      <Form.Control
+                        type="number"
+                        step="0.01"
+                        name="profiliLarte"
+                        value={formData.profiliLarte || '0'}
+                        onChange={handleChange}
+                        placeholder="0"
+                      />
+                      <Form.Text className="text-muted">
+                        Vlera që zbritet nga gjatësia
+                      </Form.Text>
+                    </Form.Group>
+                  </Col>
+                  
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Profili i Poshtëm (cm)</Form.Label>
+                      <Form.Control
+                        type="number"
+                        step="0.01"
+                        name="profiliPoshtem"
+                        value={formData.profiliPoshtem || '0'}
+                        onChange={handleChange}
+                        placeholder="0"
+                      />
+                      <Form.Text className="text-muted">
+                        Vlera që zbritet nga gjerësia
+                      </Form.Text>
+                    </Form.Group>
+                  </Col>
+                </Row>
+
+                {/* Paraqitja e llogaritjeve nëse ka të dhëna */}
+                {(formData.gjatesia || formData.gjeresia) && (
+                  <Row>
+                    <Col md={12}>
+                      <div className="bg-light p-3 rounded">
+                        <h6 className="mb-2">🧮 Llogaritjet:</h6>
+                        {formData.gjatesia && (
+                          <div className="mb-2">
+                            <strong>Gjatësia Finale:</strong> {formData.gjatesia} - {formData.profiliLarte || 0} = <span className="text-primary">{(parseFloat(formData.gjatesia || 0) - parseFloat(formData.profiliLarte || 0)).toFixed(2)} cm</span>
+                          </div>
+                        )}
+                        {formData.gjeresia && (
+                          <div>
+                            <strong>Gjerësia Finale:</strong> {formData.gjeresia} - {formData.profiliPoshtem || 0} = <span className="text-primary">{(parseFloat(formData.gjeresia || 0) - parseFloat(formData.profiliPoshtem || 0)).toFixed(2)} cm</span>
+                          </div>
+                        )}
+                      </div>
+                    </Col>
+                  </Row>
+                )}
+              </Card.Body>
+            </Card>
             
             <Row>
               <Col md={6}>

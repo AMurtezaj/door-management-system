@@ -21,6 +21,12 @@ router.get('/debts/bank', auth, orderController.getBankDebtOrders);
 // Get debt statistics
 router.get('/debts/statistics', auth, orderController.getDebtStatistics);
 
+// Get supplementary order cash debts
+router.get('/debts/supplementary/cash', auth, orderController.getSupplementaryCashDebtOrders);
+
+// Get supplementary order bank debts
+router.get('/debts/supplementary/bank', auth, orderController.getSupplementaryBankDebtOrders);
+
 // Get order by ID
 router.get('/:id', auth, orderController.getOrderById);
 
@@ -36,6 +42,15 @@ router.delete('/:id', auth, isAdmin, orderController.deleteOrder);
 // Measurement status routes
 router.put('/:id/measurement', auth, orderController.updateMeasurementStatus);
 router.get('/measurement/:statusiMatjes', auth, orderController.getOrdersByMeasurementStatus);
+
+// Update measurement status
+router.put('/:id/measurement-status', auth, orderController.updateMeasurementStatus);
+
+// Update door dimensions
+router.put('/:id/dimensions', auth, orderController.updateDimensions);
+
+// Get dimension calculations
+router.get('/:id/dimensions', auth, orderController.getDimensionCalculations);
 
 // Update print status
 router.patch('/:id/print-status', auth, orderController.updatePrintStatus);

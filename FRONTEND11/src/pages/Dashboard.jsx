@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Badge, Table, Spinner, Alert, Button } from 'react-bootstrap';
+import { Row, Col, Card, Badge, Table, Spinner, Alert, Button, Container } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   DoorOpen, DoorClosed, LockFill, ExclamationTriangleFill,
-  PeopleFill, ClockHistory, Bell, Calendar3
+  PeopleFill, ClockHistory, Bell, Calendar3, Cart, CurrencyDollar, People
 } from 'react-bootstrap-icons';
 import { getAllDoors } from '../services/doorService';
 import { getAllNotifications } from '../services/notificationService';
 import { getAllOrders, getDebtStatistics } from '../services/orderService';
 import { useAuth } from '../context/AuthContext';
 import CapacityCalendar from '../components/orders/CapacityCalendar';
+import NotificationDebug from '../components/debug/NotificationDebug';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -149,73 +150,71 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="dashboard">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h3>Dashboard</h3>
-        <div className="text-muted">
-          Mirë se vini, {user?.emri} {user?.mbiemri}
-        </div>
-      </div>
-      
+    <Container className="py-4">
       <Row className="mb-4">
-        <Col md={3} className="mb-3 mb-md-0">
-          <Card className="dashboard-stat-card shadow-sm h-100">
+        <Col>
+          <h2 className="mb-3">Dashboard</h2>
+          <p className="text-muted">Welcome back, {user?.emri}! Here's an overview of your door management system.</p>
+        </Col>
+      </Row>
+
+      {/* Statistics Cards */}
+      <Row className="mb-4">
+        <Col md={3}>
+          <Card className="dashboard-stat-card h-100">
             <Card.Body className="d-flex align-items-center">
-              <div className="stat-icon bg-light-primary text-primary">
-                <DoorOpen size={24} />
+              <div className="stat-icon bg-light-primary text-primary me-3">
+                <Cart size={24} />
               </div>
-              <div className="ms-3">
-                <h6 className="stat-label">Porosi Totale</h6>
+              <div>
+                <div className="stat-label">Porosi Totale</div>
                 <h4 className="stat-value text-primary">{orders.length}</h4>
               </div>
             </Card.Body>
           </Card>
         </Col>
-        
-        <Col md={3} className="mb-3 mb-md-0">
-          <Card className="dashboard-stat-card shadow-sm h-100">
+        <Col md={3}>
+          <Card className="dashboard-stat-card h-100">
             <Card.Body className="d-flex align-items-center">
-              <div className="stat-icon bg-light-warning text-warning">
-                <ClockHistory size={24} />
+              <div className="stat-icon bg-light-warning text-warning me-3">
+                <CurrencyDollar size={24} />
               </div>
-              <div className="ms-3">
-                <h6 className="stat-label">Borxhe (Kesh)</h6>
-                <h4 className="stat-value text-warning">{debtStats.cashDebtCount}</h4>
+              <div>
+                <div className="stat-label">Borxhe (Kesh)</div>
+                <h4 className="stat-value text-warning">{debtStats.totalCombinedCashDebt?.toFixed(2) || '0.00'}€</h4>
               </div>
             </Card.Body>
           </Card>
         </Col>
-        
-        <Col md={3} className="mb-3 mb-md-0">
-          <Card className="dashboard-stat-card shadow-sm h-100">
+        <Col md={3}>
+          <Card className="dashboard-stat-card h-100">
             <Card.Body className="d-flex align-items-center">
-              <div className="stat-icon bg-light-info text-info">
-                <PeopleFill size={24} />
+              <div className="stat-icon bg-light-info text-info me-3">
+                <People size={24} />
               </div>
-              <div className="ms-3">
-                <h6 className="stat-label">Borxhe (Bankë)</h6>
-                <h4 className="stat-value">{debtStats.bankDebtCount}</h4>
+              <div>
+                <div className="stat-label">Borxhe (Bankë)</div>
+                <h4 className="stat-value text-info">{debtStats.totalCombinedBankDebt?.toFixed(2) || '0.00'}€</h4>
               </div>
             </Card.Body>
           </Card>
         </Col>
-        
-        <Col md={3} className="mb-3 mb-md-0">
-          <Card className="dashboard-stat-card shadow-sm h-100">
+        <Col md={3}>
+          <Card className="dashboard-stat-card h-100">
             <Card.Body className="d-flex align-items-center">
-              <div className="stat-icon bg-light-danger text-danger">
+              <div className="stat-icon bg-light-danger text-danger me-3">
                 <ExclamationTriangleFill size={24} />
               </div>
-              <div className="ms-3">
-                <h6 className="stat-label">Borxhe Totale</h6>
-                <h4 className="stat-value text-danger">{debtStats.totalDebtCount}</h4>
+              <div>
+                <div className="stat-label">Borxhe Totale</div>
+                <h4 className="stat-value text-danger">{(debtStats.totalCombinedCashDebt + debtStats.totalCombinedBankDebt)?.toFixed(2) || '0.00'}€</h4>
               </div>
             </Card.Body>
           </Card>
         </Col>
       </Row>
       
-      <Row>
+      <Row className="mb-4">
         <Col lg={7} className="mb-4">
           <CapacityCalendar />
         </Col>
@@ -273,7 +272,7 @@ const Dashboard = () => {
           </Card>
         </Col>
       </Row>
-    </div>
+    </Container>
   );
 };
 
