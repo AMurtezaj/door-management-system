@@ -1,0 +1,288 @@
+/* Login Page Styles */
+.login-page {
+  background: linear-gradient(135deg, #ffc107 0%, #ffca2c 50%, #ffd54f 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Animated background elements */
+.login-page::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: 
+    radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
+  animation: float 20s ease-in-out infinite;
+  z-index: 1;
+}
+
+.login-page::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.05) 50%, transparent 70%),
+    linear-gradient(-45deg, transparent 30%, rgba(0, 0, 0, 0.03) 50%, transparent 70%);
+  z-index: 1;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(180deg);
+  }
+}
+
+/* Card enhancements */
+.login-card {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(15px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 
+    0 20px 40px rgba(0, 0, 0, 0.1),
+    0 0 0 1px rgba(255, 255, 255, 0.2);
+  transition: all 0.3s ease;
+}
+
+.login-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 
+    0 25px 50px rgba(0, 0, 0, 0.15),
+    0 0 0 1px rgba(255, 255, 255, 0.3);
+}
+
+/* Form input enhancements */
+.form-control:focus {
+  border-color: #ffc107 !important;
+  box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25) !important;
+}
+
+.form-control {
+  transition: all 0.3s ease;
+}
+
+.form-control:hover {
+  border-color: rgba(255, 193, 7, 0.5);
+}
+
+/* Button enhancements */
+.login-btn {
+  background: linear-gradient(135deg, #212529 0%, #495057 100%);
+  border: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.login-btn:hover::before {
+  left: 100%;
+}
+
+/* Logo container enhancements */
+.logo-container-login {
+  position: relative;
+}
+
+.logo-container-login::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  right: -10px;
+  bottom: -10px;
+  background: linear-gradient(45deg, #ffc107, #ff9800, #f44336);
+  border-radius: 16px;
+  opacity: 0.1;
+  z-index: -1;
+  animation: pulse 3s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.2;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .login-page {
+    padding: 20px;
+  }
+  
+  .login-card {
+    margin: 0 10px;
+  }
+}
+
+/* Loading state */
+.login-loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Success animation */
+@keyframes success {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.login-success {
+  animation: success 0.6s ease-in-out;
+}
+
+/* Error state */
+.login-error {
+  animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+/* Enhanced Developer Credit on Login Page */
+.developer-credit-login-enhanced {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.credit-card-login {
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  padding: 12px 16px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  text-align: center;
+  position: relative;
+}
+
+.credit-card-login:hover {
+  background: rgba(0, 0, 0, 0.08);
+  border-color: rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.credit-line-login {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+
+.credit-line-login:last-child {
+  margin-bottom: 0;
+}
+
+.credit-text-login {
+  font-size: 0.75rem;
+  color: #495057;
+  font-weight: 500;
+}
+
+.brand-name-login {
+  font-size: 0.8rem;
+  color: #495057;
+  font-weight: 700;
+  margin-left: 4px;
+  letter-spacing: 0.5px;
+}
+
+.developer-name-login {
+  font-size: 0.8rem;
+  color: #495057;
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+.developer-title-login {
+  font-size: 0.7rem;
+  color: #495057;
+  font-weight: 500;
+  margin-left: 4px;
+}
+
+/* Add subtle animation */
+.credit-card-login::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255, 193, 7, 0.5), transparent);
+  border-radius: 8px 8px 0 0;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.credit-card-login:hover::before {
+  opacity: 1;
+}
+
+/* Remove old styles */
+.developer-credit-login {
+  display: none;
+}
+
+.developer-credit-login small {
+  display: none;
+}
+
+.developer-credit-login .heart-icon {
+  display: none;
+}
+
+.developer-credit-login:hover .heart-icon {
+  display: none;
+}
+
+.developer-credit-login strong {
+  display: none;
+}
+
+.developer-credit-login:hover strong {
+  display: none;
+} 

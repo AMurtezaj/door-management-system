@@ -25,6 +25,67 @@
   text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
 }
 
+/* Logo Styles */
+.logo-link {
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s ease;
+}
+
+.logo-link:hover {
+  text-decoration: none;
+  color: inherit;
+  transform: scale(1.02);
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.logo-container:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.logo-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 8px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.brand-name {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #212529;
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
+  letter-spacing: 0.5px;
+}
+
+.brand-subtitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #495057;
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.3);
+  letter-spacing: 1px;
+  margin-top: -2px;
+}
+
 .sidebar-user {
   background-color: rgba(0, 0, 0, 0.05);
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
@@ -95,6 +156,126 @@
   font-size: 0.8rem;
 }
 
+/* Enhanced Developer Credit Styles */
+.developer-credit-enhanced {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.credit-card {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  padding: 12px 16px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.credit-card:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.credit-line {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+
+.credit-line:last-child {
+  margin-bottom: 0;
+}
+
+.credit-text {
+  font-size: 0.75rem;
+  color: #495057;
+  font-weight: 500;
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.3);
+}
+
+.brand-name {
+  font-size: 0.8rem;
+  color: #495057;
+  font-weight: 700;
+  margin-left: 4px;
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
+  letter-spacing: 0.5px;
+}
+
+.developer-name {
+  font-size: 0.8rem;
+  color: #495057;
+  font-weight: 700;
+  margin-left: 4px;
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+.developer-title {
+  font-size: 0.7rem;
+  color: #495057;
+  font-weight: 500;
+  margin-left: 4px;
+  text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.3);
+}
+
+/* Add subtle animation */
+.credit-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255, 193, 7, 0.5), transparent);
+  border-radius: 8px 8px 0 0;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.credit-card {
+  position: relative;
+}
+
+.credit-card:hover::before {
+  opacity: 1;
+}
+
+/* Remove old developer credit styles */
+.developer-credit {
+  display: none;
+}
+
+.developer-credit small {
+  display: none;
+}
+
+.developer-credit .heart-icon {
+  display: none;
+}
+
+@keyframes heartbeat {
+  /* Keep for other uses but not needed here */
+}
+
+.developer-credit:hover .heart-icon {
+  display: none;
+}
+
+.developer-credit strong {
+  display: none;
+}
+
+.developer-credit:hover strong {
+  display: none;
+}
+
 /* Mobile responsive styles */
 @media (max-width: 992px) {
   .sidebar {
@@ -103,6 +284,18 @@
   
   .sidebar.show {
     transform: translateX(0);
+  }
+  
+  .logo-container {
+    gap: 8px;
+  }
+  
+  .brand-name {
+    font-size: 1.2rem;
+  }
+  
+  .brand-subtitle {
+    font-size: 0.8rem;
   }
 }
 
