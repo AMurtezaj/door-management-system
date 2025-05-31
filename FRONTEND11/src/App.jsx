@@ -13,6 +13,9 @@ import CapacityManagement from './components/orders/CapacityManagement';
 import AdditionalOrdersPage from './components/orders/AdditionalOrdersPage';
 import DebtManagementPage from './pages/DebtManagementPage';
 import MeasurementStatusPage from './pages/MeasurementStatusPage';
+import QRVerification from './components/verification/QRVerification';
+import QRScanner from './components/verification/QRScanner';
+import QRDebug from './components/verification/QRDebug';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { useAuth } from './context/AuthContext';
 
@@ -23,6 +26,9 @@ const App = () => {
     <Routes>
       {/* Public routes */}
       <Route path="/login" element={!isAuthenticated ? <LoginPage /> : <Navigate to="/" replace />} />
+      <Route path="/verify" element={<QRVerification />} />
+      <Route path="/scan" element={<QRScanner />} />
+      <Route path="/debug" element={<QRDebug />} />
       
       {/* Protected routes */}
       <Route element={<ProtectedRoute />}>
