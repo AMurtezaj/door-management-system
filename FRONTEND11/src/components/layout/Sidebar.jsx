@@ -170,7 +170,7 @@ const Sidebar = ({ show, onHide }) => {
                 <strong className="brand-name">LindiDoors</strong>
               </div>
               <div className="credit-line">
-                <span className="credit-text">Developed with heart by </span>
+                <span className="credit-text">Developed by </span>
                 <strong className="developer-name">Altin Murtezaj</strong>
                 <span className="developer-title">(Software Engineer)</span>
               </div>

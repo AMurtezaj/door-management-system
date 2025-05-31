@@ -182,7 +182,7 @@ const LoginPage = () => {
                         <strong className="brand-name-login">LindiDoors</strong>
                       </div>
                       <div className="credit-line-login">
-                        <span className="credit-text-login">Developed with heart by </span>
+                        <span className="credit-text-login">Developed by </span>
                         <strong className="developer-name-login">Altin Murtezaj</strong>
                         <span className="developer-title-login">(Software Engineer)</span>
                       </div>
