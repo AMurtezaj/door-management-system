@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Badge, Button, Form, Alert, Spinner } from 'react-bootstrap';
 import { Bell, Check, CheckAll, Trash, Filter, Search } from 'react-bootstrap-icons';
 import { getAllNotifications, markAsRead, markAllAsRead, deleteNotification } from '../services/notificationService';
+import { useAuth } from '../context/AuthContext';
 import './NotificationsPage.css';
 
 const NotificationsPage = () => {
+  const { canEditOrders, isManager } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [filteredNotifications, setFilteredNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -169,6 +171,12 @@ const NotificationsPage = () => {
         </Col>
       </Row>
 
+      {isManager && (
+        <Alert variant="info" className="mb-4">
+          <strong>Njoftim për Menaxherin:</strong> Ju mund të shikoni dhe të shënoni njoftimet si të lexuara, por nuk mund t'i fshini. Vetëm administratori mund të fshijë njoftimet.
+        </Alert>
+      )}
+
       {error && (
         <Alert variant="danger" dismissible onClose={() => setError('')}>
           {error}
@@ -322,13 +330,20 @@ const NotificationsPage = () => {
                               <Check size={16} />
                             </Button>
                           )}
-                          <Button
-                            variant="outline-danger"
-                            size="sm"
-                            onClick={() => handleDeleteNotification(notification.id)}
-                          >
-                            <Trash size={16} />
-                          </Button>
+                          {canEditOrders && (
+                            <Button
+                              variant="outline-danger"
+                              size="sm"
+                              onClick={() => handleDeleteNotification(notification.id)}
+                            >
+                              <Trash size={16} />
+                            </Button>
+                          )}
+                          {isManager && !canEditOrders && (
+                            <small className="text-muted">
+                              Vetëm shikimi
+                            </small>
+                          )}
                         </div>
                       </div>
                     </Card.Body>

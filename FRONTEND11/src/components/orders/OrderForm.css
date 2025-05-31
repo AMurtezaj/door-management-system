@@ -1,0 +1,455 @@
+/* OrderForm.css - Modern, Beautiful Styling */
+
+.order-form-container {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  min-height: 100vh;
+  padding: 2rem 0;
+}
+
+/* Header Section */
+.form-header {
+  background: white;
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+.form-title {
+  font-weight: 700;
+  color: #2c3e50;
+  font-size: 2.2rem;
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.form-subtitle {
+  font-size: 1.1rem;
+  color: #6c757d;
+  margin-bottom: 0;
+}
+
+.progress-section {
+  text-align: right;
+}
+
+.progress-section .badge {
+  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+}
+
+/* Modern Alerts */
+.modern-alert {
+  border: none;
+  border-radius: 15px;
+  padding: 1rem 1.5rem;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+}
+
+.modern-alert.alert-danger {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+  color: white;
+}
+
+.modern-alert.alert-success {
+  background: linear-gradient(135deg, #51cf66, #40c057);
+  color: white;
+}
+
+/* Capacity Card */
+.capacity-card {
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.capacity-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+}
+
+.capacity-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 1.5rem;
+}
+
+.capacity-item {
+  padding: 1rem;
+  border-radius: 15px;
+  background: rgba(108, 117, 125, 0.05);
+  margin-bottom: 1rem;
+}
+
+.capacity-squares {
+  margin-top: 0.5rem;
+}
+
+.capacity-square {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #28a745, #20c997);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.capacity-alert {
+  border: none;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #ffc107, #fd7e14);
+  color: white;
+  display: flex;
+  align-items: center;
+  font-weight: 500;
+}
+
+/* Form Sections */
+.form-section {
+  border: none;
+  border-radius: 20px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  background: white;
+}
+
+.form-section:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+}
+
+.section-header {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: none;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.section-header h5 {
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0;
+}
+
+.section-body {
+  padding: 2rem;
+}
+
+/* Form Groups and Labels */
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+.form-label {
+  font-weight: 600;
+  color: #495057;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  font-size: 0.95rem;
+}
+
+.required {
+  color: #dc3545;
+  font-weight: 700;
+}
+
+/* Form Inputs */
+.form-input {
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  background: white;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.form-input:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+  transform: translateY(-1px);
+}
+
+.form-input:hover {
+  border-color: #ced4da;
+  transform: translateY(-1px);
+}
+
+.form-input::placeholder {
+  color: #adb5bd;
+  font-style: italic;
+}
+
+/* Calculated Field */
+.calculated-field {
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef) !important;
+  color: #495057;
+  font-weight: 600;
+  border-color: #ced4da;
+}
+
+/* Select Dropdown */
+.form-input option {
+  padding: 0.5rem;
+}
+
+/* Textarea */
+textarea.form-input {
+  resize: vertical;
+  min-height: 100px;
+}
+
+/* Custom Checkboxes */
+.custom-checkbox {
+  margin-bottom: 0;
+}
+
+.custom-checkbox .form-check-input {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 6px;
+  border: 2px solid #e9ecef;
+  transition: all 0.3s ease;
+}
+
+.custom-checkbox .form-check-input:checked {
+  background: linear-gradient(135deg, #28a745, #20c997);
+  border-color: #28a745;
+}
+
+.custom-checkbox .form-check-label {
+  font-weight: 500;
+  color: #495057;
+  margin-left: 0.5rem;
+  font-size: 1rem;
+}
+
+/* Calculation Display */
+.calculation-display {
+  background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+  border-radius: 15px;
+  padding: 1.5rem;
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  margin-top: 1rem;
+}
+
+.calculation-title {
+  color: #2c3e50;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+}
+
+.calculation-item {
+  margin-bottom: 0.75rem;
+  font-size: 1rem;
+  color: #495057;
+}
+
+.calculation-item:last-child {
+  margin-bottom: 0;
+}
+
+.calculation-item .result {
+  color: #667eea;
+  font-weight: 700;
+  font-size: 1.1rem;
+  margin-left: 0.5rem;
+}
+
+/* Action Buttons */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 2rem 0;
+  gap: 1rem;
+}
+
+.action-btn {
+  padding: 0.75rem 2rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1rem;
+  border: 2px solid transparent;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  min-width: 150px;
+  justify-content: center;
+}
+
+.cancel-btn {
+  background: white;
+  color: #6c757d;
+  border-color: #dee2e6;
+}
+
+.cancel-btn:hover {
+  background: #f8f9fa;
+  color: #495057;
+  border-color: #adb5bd;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+}
+
+.submit-btn {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  color: white;
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+}
+
+.submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+}
+
+.submit-btn:disabled {
+  background: #6c757d;
+  box-shadow: none;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Loading Spinner */
+.spinner-border-sm {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .order-form-container {
+    padding: 1rem 0;
+  }
+  
+  .form-header {
+    padding: 1.5rem;
+    border-radius: 15px;
+  }
+  
+  .form-title {
+    font-size: 1.8rem;
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .progress-section {
+    text-align: center;
+    margin-top: 1rem;
+  }
+  
+  .section-body {
+    padding: 1.5rem;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .action-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 576px) {
+  .form-header {
+    padding: 1rem;
+  }
+  
+  .section-body {
+    padding: 1rem;
+  }
+  
+  .form-title {
+    font-size: 1.5rem;
+  }
+}
+
+/* Animation for form sections */
+.form-section {
+  animation: slideInUp 0.6s ease-out;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Stagger animation for form sections */
+.form-section:nth-child(1) { animation-delay: 0.1s; }
+.form-section:nth-child(2) { animation-delay: 0.2s; }
+.form-section:nth-child(3) { animation-delay: 0.3s; }
+.form-section:nth-child(4) { animation-delay: 0.4s; }
+.form-section:nth-child(5) { animation-delay: 0.5s; }
+.form-section:nth-child(6) { animation-delay: 0.6s; }
+.form-section:nth-child(7) { animation-delay: 0.7s; }
+
+/* Focus states for accessibility */
+.form-input:focus,
+.action-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.25);
+}
+
+/* Hover effects for better UX */
+.form-section:hover .section-header {
+  background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+}
+
+/* Success state for completed sections */
+.form-section.completed {
+  border-left: 4px solid #28a745;
+}
+
+.form-section.completed .section-header {
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+}
+
+/* Error state for sections with validation errors */
+.form-section.error {
+  border-left: 4px solid #dc3545;
+}
+
+.form-section.error .section-header {
+  background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+}
+
+/* Modern scrollbar */
+.order-form-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.order-form-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.order-form-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 10px;
+}
+
+.order-form-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #5a6fd8, #6a4190);
+} 

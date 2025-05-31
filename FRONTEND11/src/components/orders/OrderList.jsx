@@ -15,7 +15,7 @@ const OrderList = () => {
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all'); // all, inProcess, completed, debt, unpaid
   const [searchTerm, setSearchTerm] = useState('');
-  const { isAuthenticated, refreshAuth } = useAuth();
+  const { isAuthenticated, refreshAuth, canEditOrders, canManagePayments, isManager } = useAuth();
   
   // Print invoice state
   const [showPrintModal, setShowPrintModal] = useState(false);
@@ -183,6 +183,12 @@ const OrderList = () => {
         </Button>
       </div>
       
+      {isManager && (
+        <Alert variant="info" className="mb-4">
+          <strong>Njoftim për Menaxherin:</strong> Ju mund të shikoni të gjitha porositë dhe të shtoni porosi të reja, por nuk mund të editoni, fshini, ose menaxhoni pagesat e porosive ekzistuese. Këto veprime janë të rezervuara vetëm për administratorin.
+        </Alert>
+      )}
+      
       {error && (
         <Alert variant="danger">
           {error}
@@ -297,25 +303,29 @@ const OrderList = () => {
               </td>
               <td>
                 <div className="d-flex gap-1 flex-wrap">
-                  <Button variant="info" size="sm" onClick={() => handleEdit(order.id)}>
-                    Edito
-                  </Button>
+                  {canEditOrders && (
+                    <Button variant="info" size="sm" onClick={() => handleEdit(order.id)}>
+                      Edito
+                    </Button>
+                  )}
                   
-                  <DimensionManager 
-                    orderId={order.id}
-                    initialDimensions={{
-                      gjatesia: order.gjatesia,
-                      gjeresia: order.gjeresia,
-                      profiliLarte: order.profiliLarte,
-                      profiliPoshtem: order.profiliPoshtem
-                    }}
-                    onUpdate={(updatedOrder) => {
-                      // Përditëso porosinë në state
-                      setOrders(orders.map(o => 
-                        o.id === order.id ? { ...o, ...updatedOrder } : o
-                      ));
-                    }}
-                  />
+                  {canEditOrders && (
+                    <DimensionManager 
+                      orderId={order.id}
+                      initialDimensions={{
+                        gjatesia: order.gjatesia,
+                        gjeresia: order.gjeresia,
+                        profiliLarte: order.profiliLarte,
+                        profiliPoshtem: order.profiliPoshtem
+                      }}
+                      onUpdate={(updatedOrder) => {
+                        // Përditëso porosinë në state
+                        setOrders(orders.map(o => 
+                          o.id === order.id ? { ...o, ...updatedOrder } : o
+                        ));
+                      }}
+                    />
+                  )}
                   
                   {order.tipiPorosise === 'derë garazhi' && (
                     <Button 
@@ -328,7 +338,7 @@ const OrderList = () => {
                     </Button>
                   )}
                   
-                  {!order.isPaymentDone && (
+                  {!order.isPaymentDone && canManagePayments && (
                     <Button 
                       variant="success" 
                       size="sm" 
@@ -338,7 +348,7 @@ const OrderList = () => {
                     </Button>
                   )}
                   
-                  {order.isPaymentDone && (
+                  {order.isPaymentDone && canManagePayments && (
                     <Button 
                       variant="warning" 
                       size="sm" 
@@ -357,9 +367,17 @@ const OrderList = () => {
                     <i className="bi bi-printer"></i> {order.eshtePrintuar ? "Printo Përsëri" : "Printo Faturën"}
                   </Button>
                   
-                  <Button variant="danger" size="sm" onClick={() => handleDelete(order.id)}>
-                    Fshi
-                  </Button>
+                  {canEditOrders && (
+                    <Button variant="danger" size="sm" onClick={() => handleDelete(order.id)}>
+                      Fshi
+                    </Button>
+                  )}
+                  
+                  {isManager && !canEditOrders && (
+                    <small className="text-muted align-self-center">
+                      Vetëm shikimi
+                    </small>
+                  )}
                 </div>
               </td>
             </tr>

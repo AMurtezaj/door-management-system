@@ -201,7 +201,7 @@ const CapacityCalendar = () => {
                           <div className="tiny-text" style={{ fontSize: '10px' }}>
                             <div>DG: {capacity.dyerGarazhi}</div>
                             {renderCapacityBoxes(capacity, 'dyerGarazhi')}
-                            <div>K: {capacity.kapake}</div>
+                            <div>KG: {capacity.kapake}</div>
                             {renderCapacityBoxes(capacity, 'kapake')}
                           </div>
                         </div>
@@ -238,7 +238,7 @@ const CapacityCalendar = () => {
                         <div className="tiny-text" style={{ fontSize: '10px' }}>
                           <div>DG: {capacity.dyerGarazhi}</div>
                           {renderCapacityBoxes(capacity, 'dyerGarazhi')}
-                          <div>K: {capacity.kapake}</div>
+                          <div>KG: {capacity.kapake}</div>
                           {renderCapacityBoxes(capacity, 'kapake')}
                         </div>
                       </div>
@@ -271,7 +271,7 @@ const CapacityCalendar = () => {
                       <div className="tiny-text" style={{ fontSize: '10px' }}>
                         <div>DG: {capacity.dyerGarazhi}</div>
                         {renderCapacityBoxes(capacity, 'dyerGarazhi')}
-                        <div>K: {capacity.kapake}</div>
+                        <div>KG: {capacity.kapake}</div>
                         {renderCapacityBoxes(capacity, 'kapake')}
                       </div>
                     </div>

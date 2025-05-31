@@ -26,7 +26,7 @@ const DebtManagementPage = () => {
     totalBankDebt: 0,
     totalDebt: 0
   });
-  const { isAuthenticated, refreshAuth } = useAuth();
+  const { isAuthenticated, refreshAuth, canManagePayments, isManager, canEditOrders } = useAuth();
 
   // Fetch debt data on component mount and when authentication changes
   useEffect(() => {
@@ -283,30 +283,51 @@ const DebtManagementPage = () => {
                 <td><Badge bg="danger">{remaining.toFixed(2)} €</Badge></td>
                 <td>
                   <div className="d-flex gap-2">
-                    <Button 
-                      variant="success" 
-                      size="sm" 
-                      onClick={() => handleMarkAsPaid(debt.id, debtType, debt.isSupplementary)}
-                    >
-                      Paguaj
-                    </Button>
-                    {debt.isSupplementary ? (
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => window.open(`/orders/additional`, '_blank')}
+                    {canManagePayments ? (
+                      <Button 
+                        variant="success" 
+                        size="sm" 
+                        onClick={() => handleMarkAsPaid(debt.id, debtType, debt.isSupplementary)}
                       >
-                        Detaje
+                        Paguaj
                       </Button>
                     ) : (
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        as={Link}
-                        to={`/orders/edit/${debt.id}`}
+                      <Button 
+                        variant="success" 
+                        size="sm" 
+                        disabled
+                        title="Vetëm administratori mund të menaxhojë pagesat"
                       >
-                        Detaje
+                        Paguaj
                       </Button>
+                    )}
+                    {debt.isSupplementary ? (
+                      canEditOrders && (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => window.open(`/orders/additional`, '_blank')}
+                        >
+                          Detaje
+                        </Button>
+                      )
+                    ) : (
+                      canEditOrders && (
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          as={Link}
+                          to={`/orders/edit/${debt.id}`}
+                        >
+                          Detaje
+                        </Button>
+                      )
+                    )}
+                    
+                    {isManager && !canEditOrders && (
+                      <small className="text-muted align-self-center">
+                        Vetëm shikimi
+                      </small>
                     )}
                   </div>
                 </td>
@@ -343,6 +364,12 @@ const DebtManagementPage = () => {
           </Button>
         </div>
       </div>
+      
+      {isManager && (
+        <Alert variant="info" className="mb-4">
+          <strong>Njoftim për Menaxherin:</strong> Ju mund të shikoni të gjitha borxhet dhe statistikat, por nuk mund të menaxhoni pagesat ose të aksesoni detajet e porosive. Vetëm administratori mund të shënojë borxhet si të paguara dhe të modifikojë porositë.
+        </Alert>
+      )}
       
       {error && (
         <Alert variant="danger">

@@ -5,8 +5,10 @@ import {
   updateSupplementaryOrderPaymentStatus, 
   deleteSupplementaryOrder 
 } from '../../services/supplementaryOrderService';
+import { useAuth } from '../../context/AuthContext';
 
 const SupplementaryOrdersList = ({ parentOrderId, onUpdate }) => {
+  const { canManagePayments, canEditOrders, isManager } = useAuth();
   const [supplementaryOrders, setSupplementaryOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -206,7 +208,7 @@ const SupplementaryOrdersList = ({ parentOrderId, onUpdate }) => {
                   <td>{getStatusBadge(order.statusi)}</td>
                   <td>
                     <div className="d-flex gap-1 flex-wrap">
-                      {!order.isPaymentDone && (
+                      {!order.isPaymentDone && canManagePayments && (
                         <Button 
                           variant="success" 
                           size="sm" 
@@ -219,7 +221,18 @@ const SupplementaryOrdersList = ({ parentOrderId, onUpdate }) => {
                         </Button>
                       )}
                       
-                      {order.isPaymentDone && (
+                      {!order.isPaymentDone && !canManagePayments && (
+                        <Button 
+                          variant="success" 
+                          size="sm" 
+                          disabled
+                          title="Vetëm administratori mund të menaxhojë pagesat"
+                        >
+                          Paguaj
+                        </Button>
+                      )}
+                      
+                      {order.isPaymentDone && canManagePayments && (
                         <Button 
                           variant="warning" 
                           size="sm" 
@@ -232,16 +245,24 @@ const SupplementaryOrdersList = ({ parentOrderId, onUpdate }) => {
                         </Button>
                       )}
                       
-                      <Button 
-                        variant="danger" 
-                        size="sm" 
-                        onClick={() => handleDelete(order.id)}
-                        disabled={actionLoading[`delete_${order.id}`]}
-                      >
-                        {actionLoading[`delete_${order.id}`] ? (
-                          <Spinner animation="border" size="sm" />
-                        ) : 'Fshi'}
-                      </Button>
+                      {canEditOrders && (
+                        <Button 
+                          variant="danger" 
+                          size="sm" 
+                          onClick={() => handleDelete(order.id)}
+                          disabled={actionLoading[`delete_${order.id}`]}
+                        >
+                          {actionLoading[`delete_${order.id}`] ? (
+                            <Spinner animation="border" size="sm" />
+                          ) : 'Fshi'}
+                        </Button>
+                      )}
+                      
+                      {isManager && !canEditOrders && (
+                        <small className="text-muted align-self-center">
+                          Vetëm shikimi
+                        </small>
+                      )}
                     </div>
                   </td>
                 </tr>
