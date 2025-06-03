@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Form, Button, Container, Row, Col, Card, Alert, Badge, ProgressBar } from 'react-bootstrap';
+import { Form, Button, Container, Row, Col, Card, Alert, Badge, ProgressBar, Modal, ListGroup, Toast, ToastContainer } from 'react-bootstrap';
 import { 
   Person, 
   Telephone, 
@@ -17,12 +17,16 @@ import {
   Save,
   X,
   InfoCircle,
-  PencilSquare
+  PencilSquare,
+  ExclamationTriangleFill,
+  ArrowRepeat
 } from 'react-bootstrap-icons';
 import { useNavigate, useParams } from 'react-router-dom';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
+import { sq } from 'date-fns/locale';
 import { getOrderById, updateOrder } from '../../services/orderService';
 import { getAllCapacities } from '../../services/capacityService';
+import useOrderManagement from '../../hooks/useOrderManagement';
 import './OrderForm.css';
 
 const OrderEdit = () => {
@@ -32,6 +36,23 @@ const OrderEdit = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  
+  // Use order management hook for date editing capabilities
+  const {
+    checkCapacityForDate,
+    rescheduleOrderWithNotification
+  } = useOrderManagement();
+  
+  // Date change modal state
+  const [showDateChangeModal, setShowDateChangeModal] = useState(false);
+  const [newDate, setNewDate] = useState('');
+  const [dateChangeLoading, setDateChangeLoading] = useState(false);
+  const [availableDates, setAvailableDates] = useState([]);
+  
+  // Toast notifications
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastVariant, setToastVariant] = useState('success');
   
   const [formData, setFormData] = useState({
     emriKlientit: '',
@@ -70,6 +91,12 @@ const OrderEdit = () => {
     const requiredFields = ['emriKlientit', 'mbiemriKlientit', 'numriTelefonit', 'vendi', 'shitesi', 'cmimiTotal', 'dita'];
     const filledFields = requiredFields.filter(field => formData[field] && formData[field].toString().trim() !== '');
     return Math.round((filledFields.length / requiredFields.length) * 100);
+  };
+  
+  const showToastNotification = (message, variant = 'success') => {
+    setToastMessage(message);
+    setToastVariant(variant);
+    setShowToast(true);
   };
   
   // Fetch order and capacities
@@ -114,6 +141,163 @@ const OrderEdit = () => {
     }));
   };
   
+  // Handle date change with capacity checking
+  const handleDateChange = async (e) => {
+    const selectedDate = e.target.value;
+    
+    if (!selectedDate) {
+      setFormData(prev => ({ ...prev, dita: selectedDate }));
+      return;
+    }
+    
+    try {
+      // Check capacity for the new date
+      const capacityCheck = await checkCapacityForDate(selectedDate, formData.tipiPorosise);
+      
+      if (capacityCheck.hasCapacity) {
+        // Date has capacity, update and save immediately
+        const updatedFormData = { ...formData, dita: selectedDate };
+        setFormData(updatedFormData);
+        
+        try {
+          // Save to database immediately
+          await updateOrder(id, updatedFormData);
+          showToastNotification(
+            `Data u ndryshua dhe u ruajt me sukses në ${format(parseISO(selectedDate), 'dd/MM/yyyy', { locale: sq })}`, 
+            'success'
+          );
+        } catch (saveError) {
+          console.error('Auto-save failed:', saveError);
+          // Reset the date field to original value since save failed
+          setFormData(prev => ({ ...prev, dita: formData.dita }));
+          showToastNotification(
+            `Gabim: Nuk mund të ruhet data e re në bazën e të dhënave. Ju lutem kontrolloni lidhjen dhe provoni përsëri. Detaje: ${saveError.message}`,
+            'danger'
+          );
+        }
+      } else {
+        // No capacity, show warning and suggest alternatives
+        setNewDate(selectedDate);
+        setShowDateChangeModal(true);
+        
+        // Find alternative dates with capacity
+        const alternatives = [];
+        for (const capacity of capacities) {
+          if (capacity.dita !== formData.dita) { // Don't include current date
+            try {
+              const altCapacityCheck = await checkCapacityForDate(capacity.dita, formData.tipiPorosise);
+              if (altCapacityCheck.hasCapacity) {
+                alternatives.push(capacity.dita);
+              }
+            } catch (error) {
+              console.warn(`Could not check capacity for ${capacity.dita}:`, error);
+              // Include anyway as potential option
+              if ((formData.tipiPorosise === 'derë garazhi' && capacity.dyerGarazhi > 0) ||
+                  (formData.tipiPorosise === 'kapak' && capacity.kapake > 0)) {
+                alternatives.push(capacity.dita);
+              }
+            }
+          }
+        }
+        
+        setAvailableDates(alternatives.slice(0, 10)); // Limit to 10 alternatives
+      }
+    } catch (error) {
+      console.warn('Capacity check failed, attempting to save anyway:', error);
+      
+      // Try to save even if capacity check failed
+      const updatedFormData = { ...formData, dita: selectedDate };
+      setFormData(updatedFormData);
+      
+      try {
+        await updateOrder(id, updatedFormData);
+        showToastNotification(
+          `Data u ndryshua dhe u ruajt me sukses në ${format(parseISO(selectedDate), 'dd/MM/yyyy', { locale: sq })} (kontrolli i kapacitetit nuk ishte i disponueshëm)`, 
+          'warning'
+        );
+      } catch (saveError) {
+        console.error('Save failed after capacity check failure:', saveError);
+        // Reset the date field to original value since save failed
+        setFormData(prev => ({ ...prev, dita: formData.dita }));
+        showToastNotification(
+          `Gabim: Nuk mund të ruhet data e re në bazën e të dhënave. Ju lutem kontrolloni lidhjen dhe provoni përsëri. Detaje: ${saveError.message}`,
+          'danger'
+        );
+      }
+    }
+  };
+  
+  // Force date change despite capacity warning
+  const forceDateChange = async () => {
+    try {
+      // Update the form data first
+      const updatedFormData = { ...formData, dita: newDate };
+      setFormData(updatedFormData);
+      
+      // Save the changes directly to the database
+      await updateOrder(id, updatedFormData);
+      
+      setShowDateChangeModal(false);
+      showToastNotification(
+        `Data u ndryshua dhe u ruajt në ${format(parseISO(newDate), 'dd/MM/yyyy', { locale: sq })} (paralajmërim: kapaciteti mund të jetë i plotë)`, 
+        'warning'
+      );
+    } catch (error) {
+      console.error('Force date change save failed:', error);
+      
+      // No local fallback - show clear error message
+      setShowDateChangeModal(false);
+      showToastNotification(
+        `Gabim: Nuk mund të ruhet data e re në bazën e të dhënave. Ju lutem kontrolloni lidhjen dhe provoni përsëri. Detaje: ${error.message}`,
+        'danger'
+      );
+    }
+  };
+  
+  // Use smart rescheduling
+  const useSmartReschedule = async (alternativeDate) => {
+    try {
+      setDateChangeLoading(true);
+      
+      // Update the form data first
+      const updatedFormData = { ...formData, dita: alternativeDate };
+      setFormData(updatedFormData);
+      
+      // Save the changes directly to the database
+      await updateOrder(id, updatedFormData);
+      
+      // Also try to use the reschedule notification system (optional)
+      try {
+        await rescheduleOrderWithNotification(
+          parseInt(id), 
+          alternativeDate, 
+          'Riplanifikuar nga forma e editimit për shkak të kapacitetit'
+        );
+      } catch (notificationError) {
+        console.warn('Notification creation failed:', notificationError);
+        // Continue even if notification fails
+      }
+      
+      setShowDateChangeModal(false);
+      showToastNotification(
+        `Porosia u riplanifikua dhe u ruajt me sukses në ${format(parseISO(alternativeDate), 'dd/MM/yyyy', { locale: sq })}`,
+        'success'
+      );
+      
+    } catch (error) {
+      console.error('Smart reschedule failed:', error);
+      
+      // No local fallback - show clear error message
+      setShowDateChangeModal(false);
+      showToastNotification(
+        `Gabim: Nuk mund të ruhet data e re në bazën e të dhënave. Ju lutem kontrolloni lidhjen dhe provoni përsëri. Detaje: ${error.message}`,
+        'danger'
+      );
+    } finally {
+      setDateChangeLoading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -132,6 +316,8 @@ const OrderEdit = () => {
       await updateOrder(id, formData);
       
       setSuccess('Porosia u përditësua me sukses!');
+      showToastNotification('Porosia u përditësua me sukses!', 'success');
+      
       // Redirect after a short delay
       setTimeout(() => {
         navigate('/orders');
@@ -142,6 +328,7 @@ const OrderEdit = () => {
       } else {
         setError('Ka ndodhur një gabim gjatë përditësimit të porosisë');
       }
+      showToastNotification('Gabim gjatë përditësimit të porosisë', 'danger');
     } finally {
       setLoading(false);
     }
@@ -547,14 +734,13 @@ const OrderEdit = () => {
                     type="date"
                     name="dita"
                     value={formData.dita}
-                    onChange={handleChange}
+                    onChange={handleDateChange}
                     className="form-input"
                     required
-                    disabled
                   />
                   <Form.Text className="text-muted">
                     <InfoCircle className="me-1" size={12} />
-                    Dita nuk mund të ndryshohet pasi kapaciteti është i rezervuar.
+                    Klikoni këtu për të ndryshuar datën. Sistemi do të kontrollojë kapacitetin automatikisht.
                   </Form.Text>
                 </Form.Group>
               </Col>
@@ -833,6 +1019,94 @@ const OrderEdit = () => {
           </Button>
         </div>
       </Form>
+
+      {/* Date Change Modal */}
+      <Modal show={showDateChangeModal} onHide={() => setShowDateChangeModal(false)} centered>
+        <Modal.Header closeButton className="modern-modal-header">
+          <Modal.Title>
+            <ExclamationTriangleFill className="me-2 text-warning" />
+            Paralajmërim Kapaciteti
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="modern-modal-body">
+          <Alert variant="warning">
+            <ExclamationTriangleFill className="me-2" />
+            <strong>Data e zgjedhur ({newDate ? format(parseISO(newDate), 'dd/MM/yyyy', { locale: sq }) : ''}) nuk ka kapacitet të disponueshëm</strong>
+            <br />
+            <small>Lloji i porosisë: {formData.tipiPorosise}</small>
+          </Alert>
+          
+          <p>Zgjidhni një nga opsionet e mëposhtme:</p>
+          
+          <div className="mb-3">
+            <Button
+              variant="outline-warning"
+              className="w-100 mb-2"
+              onClick={forceDateChange}
+            >
+              <Calendar className="me-2" />
+              Vazhdo me datën e zgjedhur (mund të ketë probleme kapaciteti)
+            </Button>
+            
+            <hr />
+            
+            <h6>Ose zgjidhni një datë alternative me kapacitet:</h6>
+            {availableDates.length > 0 ? (
+              <ListGroup>
+                {availableDates.map(date => (
+                  <ListGroup.Item 
+                    key={date} 
+                    action 
+                    onClick={() => useSmartReschedule(date)}
+                    disabled={dateChangeLoading}
+                    className="d-flex align-items-center justify-content-between"
+                  >
+                    <div>
+                      <Calendar className="me-2" />
+                      {format(parseISO(date), 'dd/MM/yyyy EEEE', { locale: sq })}
+                    </div>
+                    <ArrowRepeat className="text-primary" />
+                  </ListGroup.Item>
+                ))}
+              </ListGroup>
+            ) : (
+              <Alert variant="info">
+                <InfoCircle className="me-2" />
+                Nuk ka data alternative të disponueshme me kapacitet. Ju lutem zgjidhni datën manuale.
+              </Alert>
+            )}
+          </div>
+        </Modal.Body>
+        <Modal.Footer className="modern-modal-footer">
+          <Button 
+            variant="outline-secondary" 
+            onClick={() => setShowDateChangeModal(false)}
+            disabled={dateChangeLoading}
+          >
+            Anulo
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Toast Notifications */}
+      <ToastContainer className="position-fixed" style={{ top: '20px', right: '20px', zIndex: 9999 }}>
+        <Toast 
+          show={showToast} 
+          onClose={() => setShowToast(false)} 
+          delay={4000} 
+          autohide
+          bg={toastVariant}
+        >
+          <Toast.Header closeButton={false}>
+            <strong className="me-auto text-white">
+              {toastVariant === 'success' ? 'Sukses' : toastVariant === 'danger' ? 'Gabim' : 'Informacion'}
+            </strong>
+          </Toast.Header>
+          <Toast.Body className="text-white">
+            {toastMessage}
+          </Toast.Body>
+        </Toast>
+      </ToastContainer>
     </Container>
   );
 };

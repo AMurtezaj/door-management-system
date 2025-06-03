@@ -389,7 +389,7 @@ const UserProfile = () => {
                 onClick={handleSave}
                 disabled={loading}
                     sx={{ borderRadius: 2 }}
-                  >
+              >
                     {loading ? 'Saving...' : 'Save Changes'}
               </Button>
             </Grid>
@@ -416,7 +416,7 @@ const UserProfile = () => {
                     {getRoleLabel(user.roli)}
               </Typography>
                 </Paper>
-              </Grid>
+            </Grid>
           </Grid>
         )}
       </CardContent>

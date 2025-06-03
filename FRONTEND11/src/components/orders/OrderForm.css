@@ -452,4 +452,93 @@ textarea.form-input {
 
 .order-form-container::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(135deg, #5a6fd8, #6a4190);
+}
+
+/* ===== DATE CHANGE MODAL STYLES ===== */
+
+.modern-modal-header {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 0.375rem 0.375rem 0 0;
+}
+
+.modern-modal-body {
+  background: #ffffff;
+  padding: 1.5rem;
+}
+
+.modern-modal-footer {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 0 0 0.375rem 0.375rem;
+}
+
+.modern-modal-header .modal-title {
+  color: #495057;
+  font-weight: 600;
+}
+
+/* Alternative dates list styling */
+.list-group-item:hover {
+  background: linear-gradient(135deg, rgba(0, 123, 255, 0.1) 0%, rgba(0, 86, 179, 0.05) 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.list-group-item.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Enhanced toast styling for date changes */
+.toast.bg-warning .toast-header {
+  background: rgba(255, 193, 7, 0.1);
+  border-bottom: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.toast.bg-success .toast-header {
+  background: rgba(40, 167, 69, 0.1);
+  border-bottom: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.toast.bg-danger .toast-header {
+  background: rgba(220, 53, 69, 0.1);
+  border-bottom: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+/* Date input field enhancement */
+.form-input[type="date"]:enabled {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.form-input[type="date"]:enabled:hover {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.15);
+}
+
+.form-input[type="date"]:enabled:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+/* Date change button styling */
+.btn-outline-warning:hover {
+  background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+  border-color: #e0a800;
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+}
+
+/* Alternative date item styling */
+.list-group-item[data-date-alternative] {
+  border-left: 4px solid #007bff;
+  background: linear-gradient(135deg, rgba(0, 123, 255, 0.03) 0%, rgba(255, 255, 255, 1) 50%);
+}
+
+.list-group-item[data-date-alternative]:hover {
+  border-left-color: #0056b3;
+  background: linear-gradient(135deg, rgba(0, 123, 255, 0.08) 0%, rgba(0, 123, 255, 0.02) 100%);
 } 

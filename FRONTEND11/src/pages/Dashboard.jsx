@@ -3,8 +3,7 @@ import { Row, Col, Card, Badge, Table, Spinner, Alert, Button, Container } from 
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   DoorOpen, DoorClosed, LockFill, ExclamationTriangleFill,
-  PeopleFill, ClockHistory, Bell, Calendar3, Cart, CurrencyDollar, People,
-  TrendingUp, TrendingDown, ArrowUp, ArrowDown
+  PeopleFill, ClockHistory, Bell, Calendar3, Cart, CurrencyDollar, People
 } from 'react-bootstrap-icons';
 import { getAllDoors } from '../services/doorService';
 import { getAllNotifications } from '../services/notificationService';
@@ -134,156 +133,117 @@ const Dashboard = () => {
 
   if (!isAuthenticated) {
     return (
-      <div className="dashboard-container">
-        <div className="unauthenticated-card">
-          <div className="welcome-icon">
-            <DoorClosed size={48} />
-          </div>
-          <h3>Mirë se vini në Sistemin e Menaxhimit të Dyerve</h3>
-          <Alert variant="info" className="welcome-alert">
-            Ju duhet të jeni të loguar për të parë përmbajtjen e panelit kryesor.
-          </Alert>
-          <Button onClick={() => navigate('/login')} size="lg" className="login-btn">
-            Logohu tani
-          </Button>
-        </div>
+      <div className="dashboard">
+        <Card>
+          <Card.Body className="text-center p-5">
+            <h3>Mirë se vini në Sistemin e Menaxhimit të Dyerve</h3>
+            <Alert variant="info" className="my-4">
+              Ju duhet të jeni të loguar për të parë përmbajtjen e panelit kryesor.
+            </Alert>
+            <Button onClick={() => navigate('/login')} size="lg" variant="primary">
+              Logohu tani
+            </Button>
+          </Card.Body>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="dashboard-container">
-      {/* Header Section */}
-      <div className="dashboard-header">
-        <div className="header-content">
-          <div>
-            <h1 className="dashboard-title">Dashboard</h1>
-            <p className="dashboard-subtitle">Mirë se erdhët, {user?.emri}! Këtu është një përmbledhje e sistemit tuaj të menaxhimit të dyerve.</p>
-          </div>
-          <div className="quick-actions">
-            <Button variant="outline-primary" size="sm" onClick={() => navigate('/orders/new')}>
-              <Cart className="me-1" size={16} />
-              Porosi e Re
-            </Button>
-          </div>
-        </div>
-      </div>
+    <Container className="py-4">
+      <Row className="mb-4">
+        <Col>
+          <h2 className="mb-3">Dashboard</h2>
+          <p className="text-muted">Welcome back, {user?.emri}! Here's an overview of your door management system.</p>
+        </Col>
+      </Row>
 
       {/* Statistics Cards */}
-      <Row className="stats-row g-4 mb-5">
-        <Col md={6} lg={3}>
-          <div className="modern-stat-card orders-card">
-            <div className="stat-content">
-              <div className="stat-info">
-                <h3 className="stat-number">{orders.length}</h3>
-                <p className="stat-label">Porosi Totale</p>
+      <Row className="mb-4">
+        <Col md={3}>
+          <Card className="dashboard-stat-card h-100">
+            <Card.Body className="d-flex align-items-center">
+              <div className="stat-icon bg-light-primary text-primary me-3">
+                <Cart size={24} />
               </div>
-              <div className="stat-icon-container">
-                <Cart className="stat-icon" />
+              <div>
+                <div className="stat-label">Porosi Totale</div>
+                <h4 className="stat-value text-primary">{orders.length}</h4>
               </div>
-            </div>
-            <div className="stat-footer">
-              <div className="trend positive">
-                <TrendingUp size={16} />
-                <span>+12% këtë muaj</span>
-              </div>
-            </div>
-          </div>
+            </Card.Body>
+          </Card>
         </Col>
-        
-        <Col md={6} lg={3}>
-          <div className="modern-stat-card cash-debt-card">
-            <div className="stat-content">
-              <div className="stat-info">
-                <h3 className="stat-number">{debtStats.totalCombinedCashDebt?.toFixed(2) || '0.00'}€</h3>
-                <p className="stat-label">Borxhe (Kesh)</p>
+        <Col md={3}>
+          <Card className="dashboard-stat-card h-100">
+            <Card.Body className="d-flex align-items-center">
+              <div className="stat-icon bg-light-warning text-warning me-3">
+                <CurrencyDollar size={24} />
               </div>
-              <div className="stat-icon-container">
-                <CurrencyDollar className="stat-icon" />
+              <div>
+                <div className="stat-label">Borxhe (Kesh)</div>
+                <h4 className="stat-value text-warning">{debtStats.totalCombinedCashDebt?.toFixed(2) || '0.00'}€</h4>
               </div>
-            </div>
-            <div className="stat-footer">
-              <div className="trend negative">
-                <TrendingDown size={16} />
-                <span>-5% këtë javë</span>
-              </div>
-            </div>
-          </div>
+            </Card.Body>
+          </Card>
         </Col>
-        
-        <Col md={6} lg={3}>
-          <div className="modern-stat-card bank-debt-card">
-            <div className="stat-content">
-              <div className="stat-info">
-                <h3 className="stat-number">{debtStats.totalCombinedBankDebt?.toFixed(2) || '0.00'}€</h3>
-                <p className="stat-label">Borxhe (Bankë)</p>
+        <Col md={3}>
+          <Card className="dashboard-stat-card h-100">
+            <Card.Body className="d-flex align-items-center">
+              <div className="stat-icon bg-light-info text-info me-3">
+                <People size={24} />
               </div>
-              <div className="stat-icon-container">
-                <People className="stat-icon" />
+              <div>
+                <div className="stat-label">Borxhe (Bankë)</div>
+                <h4 className="stat-value text-info">{debtStats.totalCombinedBankDebt?.toFixed(2) || '0.00'}€</h4>
               </div>
-            </div>
-            <div className="stat-footer">
-              <div className="trend neutral">
-                <span>Pa ndryshim</span>
-              </div>
-            </div>
-          </div>
+            </Card.Body>
+          </Card>
         </Col>
-        
-        <Col md={6} lg={3}>
-          <div className="modern-stat-card total-debt-card">
-            <div className="stat-content">
-              <div className="stat-info">
-                <h3 className="stat-number">{(debtStats.totalCombinedCashDebt + debtStats.totalCombinedBankDebt)?.toFixed(2) || '0.00'}€</h3>
-                <p className="stat-label">Borxhe Totale</p>
+        <Col md={3}>
+          <Card className="dashboard-stat-card h-100">
+            <Card.Body className="d-flex align-items-center">
+              <div className="stat-icon bg-light-danger text-danger me-3">
+                <ExclamationTriangleFill size={24} />
               </div>
-              <div className="stat-icon-container">
-                <ExclamationTriangleFill className="stat-icon" />
+              <div>
+                <div className="stat-label">Borxhe Totale</div>
+                <h4 className="stat-value text-danger">{(debtStats.totalCombinedCashDebt + debtStats.totalCombinedBankDebt)?.toFixed(2) || '0.00'}€</h4>
               </div>
-            </div>
-            <div className="stat-footer">
-              <div className="trend warning">
-                <ArrowUp size={16} />
-                <span>Kërkon vëmendje</span>
-              </div>
-            </div>
-          </div>
+            </Card.Body>
+          </Card>
         </Col>
       </Row>
       
-      <Row className="main-content-row g-4">
-        <Col lg={8} className="mb-4">
-          <div className="calendar-container">
-            <CapacityCalendar />
-          </div>
+      <Row className="mb-4">
+        <Col lg={7} className="mb-4">
+          <CapacityCalendar />
         </Col>
         
-        <Col lg={4} className="mb-4">
-          <div className="orders-table-container">
-            <div className="section-header">
-              <div className="header-left">
-                <Calendar3 className="section-icon" />
-                <h5 className="section-title">Porositë e Fundit</h5>
+        <Col lg={5} className="mb-4">
+          <Card className="shadow-sm h-100">
+            <Card.Header className="bg-white d-flex justify-content-between align-items-center py-3">
+              <div className="d-flex align-items-center">
+                <Calendar3 className="me-2" />
+                <h5 className="mb-0">Porositë e Fundit</h5>
               </div>
-              <Link to="/orders" className="view-all-btn">
+              <Link to="/orders" className="btn btn-sm btn-outline-primary">
                 Shiko Të Gjitha
               </Link>
-            </div>
-            <div className="table-container">
+            </Card.Header>
+            <Card.Body className="p-0">
               {ordersLoading ? (
-                <div className="loading-state">
-                  <Spinner animation="border" size="sm" />
-                  <p>Duke ngarkuar porositë...</p>
+                <div className="text-center p-4">
+                  <Spinner animation="border" role="status" />
+                  <p className="mt-2 text-muted">Duke ngarkuar porositë...</p>
                 </div>
               ) : orders.length === 0 ? (
-                <div className="empty-state">
-                  <Cart size={32} className="empty-icon" />
-                  <p>Nuk u gjetën porosi.</p>
+                <div className="text-center p-4">
+                  <p className="text-muted">Nuk u gjetën porosi.</p>
                 </div>
               ) : (
-                <div className="modern-table-wrapper">
-                  <Table hover className="modern-table">
-                    <thead>
+                <div className="table-responsive">
+                  <Table hover className="mb-0">
+                    <thead className="table-light">
                       <tr>
                         <th>Klienti</th>
                         <th>Tipi</th>
@@ -295,17 +255,12 @@ const Dashboard = () => {
                       {orders.map(order => (
                         <tr key={order.id}>
                           <td>
-                            <Link to={`/orders/edit/${order.id}`} className="client-link">
-                              <div className="client-info">
-                                <div className="client-avatar">
-                                  {order.emriKlientit?.charAt(0)}{order.mbiemriKlientit?.charAt(0)}
-                                </div>
-                                <span>{order.emriKlientit} {order.mbiemriKlientit}</span>
-                              </div>
+                            <Link to={`/orders/edit/${order.id}`} className="text-decoration-none">
+                              {order.emriKlientit} {order.mbiemriKlientit}
                             </Link>
                           </td>
-                          <td><span className="order-type">{order.tipiPorosise}</span></td>
-                          <td><span className="price">{parseFloat(order.cmimiTotal).toFixed(2)} €</span></td>
+                          <td>{order.tipiPorosise}</td>
+                          <td>{parseFloat(order.cmimiTotal).toFixed(2)} €</td>
                           <td>{getOrderStatusBadge(order.statusi)}</td>
                         </tr>
                       ))}
@@ -313,11 +268,11 @@ const Dashboard = () => {
                   </Table>
                 </div>
               )}
-            </div>
-          </div>
+            </Card.Body>
+          </Card>
         </Col>
       </Row>
-    </div>
+    </Container>
   );
 };
 

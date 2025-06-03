@@ -179,8 +179,8 @@ const UserManagementPage = () => {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Box>
           <Typography variant="h4" component="h1" sx={{ fontWeight: 600, mb: 1 }}>
-            User Management
-          </Typography>
+          User Management
+        </Typography>
           <Typography variant="body1" color="textSecondary">
             Manage system users and their permissions
           </Typography>
@@ -294,17 +294,17 @@ const UserManagementPage = () => {
       {/* Users Table */}
       <Card sx={{ boxShadow: 2 }}>
         <TableContainer>
-          <Table>
+        <Table>
             <TableHead sx={{ bgcolor: 'grey.50' }}>
-              <TableRow>
+            <TableRow>
                 <TableCell sx={{ fontWeight: 600 }}>User</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Email</TableCell>
                 <TableCell sx={{ fontWeight: 600 }}>Role</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 600 }}>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading ? (
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {loading ? (
                 Array.from(new Array(5)).map((_, index) => (
                   <TableRow key={index}>
                     <TableCell>
@@ -319,17 +319,17 @@ const UserManagementPage = () => {
                     <TableCell><Skeleton width={200} /></TableCell>
                     <TableCell><Skeleton width={100} /></TableCell>
                     <TableCell><Skeleton width={100} /></TableCell>
-                  </TableRow>
+              </TableRow>
                 ))
               ) : paginatedUsers.length === 0 ? (
-                <TableRow>
+              <TableRow>
                   <TableCell colSpan={4} align="center" sx={{ py: 4 }}>
                     <Typography variant="body1" color="textSecondary">
                       {searchTerm || roleFilter !== 'all' ? 'No users match your search criteria' : 'No users found'}
                     </Typography>
                   </TableCell>
-                </TableRow>
-              ) : (
+              </TableRow>
+            ) : (
                 paginatedUsers.map((user, index) => (
                   <Fade in={true} timeout={300 + index * 100} key={user.id}>
                     <TableRow hover sx={{ '&:hover': { bgcolor: 'action.hover' } }}>
@@ -368,16 +368,16 @@ const UserManagementPage = () => {
                           size="small"
                         />
                       </TableCell>
-                      <TableCell align="right">
+                  <TableCell align="right">
                         <Tooltip title="Edit User">
-                          <IconButton 
-                            color="primary" 
-                            onClick={() => handleEditUser(user)}
+                      <IconButton 
+                        color="primary" 
+                        onClick={() => handleEditUser(user)}
                             size="small"
-                          >
-                            <EditIcon />
-                          </IconButton>
-                        </Tooltip>
+                      >
+                        <EditIcon />
+                      </IconButton>
+                    </Tooltip>
                         <Tooltip title={
                           user.id === currentUser.id 
                             ? "Cannot delete yourself" 
@@ -386,24 +386,24 @@ const UserManagementPage = () => {
                               : "Delete User"
                         }>
                           <span>
-                            <IconButton 
-                              color="error" 
-                              onClick={() => handleDeleteClick(user)}
-                              disabled={user.id === currentUser.id || (user.roli === 'admin' && users.filter(u => u.roli === 'admin').length <= 1)}
+                      <IconButton 
+                        color="error" 
+                        onClick={() => handleDeleteClick(user)}
+                        disabled={user.id === currentUser.id || (user.roli === 'admin' && users.filter(u => u.roli === 'admin').length <= 1)}
                               size="small"
-                            >
-                              <DeleteIcon />
-                            </IconButton>
+                      >
+                        <DeleteIcon />
+                      </IconButton>
                           </span>
-                        </Tooltip>
-                      </TableCell>
-                    </TableRow>
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
                   </Fade>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
         
         {/* Pagination */}
         {filteredUsers.length > 0 && (

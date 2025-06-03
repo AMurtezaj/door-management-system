@@ -55,4 +55,10 @@ router.get('/:id/dimensions', auth, orderController.getDimensionCalculations);
 // Update print status
 router.patch('/:id/print-status', auth, orderController.updatePrintStatus);
 
+// Update order date
+router.patch('/:id/date', auth, orderController.updateOrderDate);
+
+// Reschedule order with notification
+router.patch('/:id/reschedule', auth, orderController.rescheduleOrder);
+
 module.exports = router; 

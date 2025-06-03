@@ -502,6 +502,99 @@ const orderController = {
         }
     },
 
+    // Update order date (simple date change)
+    updateOrderDate: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { dita } = req.body;
+
+            if (!dita) {
+                return res.status(400).json({ message: 'Data është e detyrueshme!' });
+            }
+
+            // Format date to DATEONLY (YYYY-MM-DD)
+            const formattedDate = new Date(dita).toISOString().split('T')[0];
+
+            const order = await Order.findByPk(id, {
+                include: [
+                    { model: Customer },
+                    { model: Payment },
+                    { model: OrderDetails, as: 'OrderDetail' },
+                    { model: SupplementaryOrder }
+                ]
+            });
+
+            if (!order) {
+                return res.status(404).json({ message: 'Porosia nuk u gjet!' });
+            }
+
+            // Update the order date
+            const orderData = { dita: formattedDate };
+            const updatedOrder = await orderService.updateCompleteOrder(id, orderData);
+            
+            res.json(updatedOrder);
+        } catch (error) {
+            console.error('Error updating order date:', error);
+            res.status(400).json({ message: 'Diçka shkoi keq gjatë përditësimit të datës!' });
+        }
+    },
+
+    // Reschedule order with reason and notification
+    rescheduleOrder: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { newDate, reason, rescheduledAt } = req.body;
+
+            if (!newDate) {
+                return res.status(400).json({ message: 'Data e re është e detyrueshme!' });
+            }
+
+            // Format date to DATEONLY (YYYY-MM-DD)
+            const formattedDate = new Date(newDate).toISOString().split('T')[0];
+
+            const order = await Order.findByPk(id, {
+                include: [
+                    { model: Customer },
+                    { model: Payment },
+                    { model: OrderDetails, as: 'OrderDetail' },
+                    { model: SupplementaryOrder }
+                ]
+            });
+
+            if (!order) {
+                return res.status(404).json({ message: 'Porosia nuk u gjet!' });
+            }
+
+            const oldDate = order.dita;
+
+            // Update the order with new date and reschedule info
+            const orderData = { 
+                dita: formattedDate,
+                // You can add reschedule tracking fields here if needed
+                // lastRescheduledAt: rescheduledAt || new Date(),
+                // rescheduleReason: reason
+            };
+            
+            const updatedOrder = await orderService.updateCompleteOrder(id, orderData);
+            
+            // Create notification for the rescheduled order
+            await notificationController.createOrderNotification(updatedOrder.id);
+            
+            res.json({
+                ...updatedOrder,
+                rescheduleInfo: {
+                    oldDate,
+                    newDate: formattedDate,
+                    reason: reason || 'Riplanifikim nga sistemi',
+                    rescheduledAt: rescheduledAt || new Date()
+                }
+            });
+        } catch (error) {
+            console.error('Error rescheduling order:', error);
+            res.status(400).json({ message: 'Diçka shkoi keq gjatë riplanifikimit!' });
+        }
+    },
+
     // Get supplementary order cash debts
     getSupplementaryCashDebtOrders: async (req, res) => {
         try {

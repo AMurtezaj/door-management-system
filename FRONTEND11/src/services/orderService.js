@@ -386,4 +386,143 @@ export const getDimensionCalculations = async (id) => {
     console.error(`Error getting dimension calculations for order ${id}:`, error);
     throw new Error(error.response?.data?.message || `Gabim gjatë marrjes së llogaritjeve të dimensioneve për porosinë ${id}`);
   }
+};
+
+/**
+ * Reschedule order to a new date
+ * @param {number} orderId - Order ID
+ * @param {string} newDate - New date in YYYY-MM-DD format
+ * @param {string} reason - Reason for rescheduling
+ * @returns {Promise} - Promise with updated order data
+ */
+export const rescheduleOrder = async (orderId, newDate, reason = '') => {
+  try {
+    const response = await api.patch(`/orders/${orderId}/reschedule`, { 
+      newDate, 
+      reason,
+      rescheduledAt: new Date().toISOString()
+    });
+    return formatOrderResponse(response.data);
+  } catch (error) {
+    console.error(`Error rescheduling order ${orderId}:`, error);
+    throw new Error(error.response?.data?.message || `Gabim gjatë riplanifikimit të porosisë ${orderId}`);
+  }
+};
+
+/**
+ * Update order date
+ * @param {number} id - Order ID
+ * @param {string} newDate - New date in YYYY-MM-DD format
+ * @returns {Promise} - Promise with updated order data
+ */
+export const updateOrderDate = async (id, newDate) => {
+  try {
+    const response = await api.patch(`/orders/${id}/date`, { dita: newDate });
+    return formatOrderResponse(response.data);
+  } catch (error) {
+    console.error(`Error updating order date for ${id}:`, error);
+    throw new Error(error.response?.data?.message || `Gabim gjatë përditësimit të datës për porosinë ${id}`);
+  }
+};
+
+/**
+ * Check if a date has capacity conflicts
+ * @param {string} date - Date in YYYY-MM-DD format
+ * @param {string} orderType - Type of order (optional)
+ * @returns {Promise} - Promise with capacity check result
+ */
+export const checkDateCapacity = async (date, orderType = null) => {
+  try {
+    const params = orderType ? { orderType } : {};
+    const response = await api.get(`/orders/capacity-check/${date}`, { params });
+    return response.data;
+  } catch (error) {
+    console.error(`Error checking capacity for ${date}:`, error);
+    throw new Error(error.response?.data?.message || `Gabim gjatë kontrollit të kapacitetit për datën ${date}`);
+  }
+};
+
+/**
+ * Get orders that need attention (overdue, capacity conflicts, etc.)
+ * @returns {Promise} - Promise with orders needing attention
+ */
+export const getOrdersNeedingAttention = async () => {
+  try {
+    const response = await api.get('/orders/attention-needed');
+    return formatOrdersResponse(response.data);
+  } catch (error) {
+    console.error('Error fetching orders needing attention:', error);
+    throw new Error(error.response?.data?.message || 'Gabim gjatë marrjes së porosive që kanë nevojë për vëmendje');
+  }
+};
+
+/**
+ * Get overdue orders
+ * @returns {Promise} - Promise with overdue orders
+ */
+export const getOverdueOrders = async () => {
+  try {
+    const response = await api.get('/orders/overdue');
+    return formatOrdersResponse(response.data);
+  } catch (error) {
+    console.error('Error fetching overdue orders:', error);
+    throw new Error(error.response?.data?.message || 'Gabim gjatë marrjes së porosive të vonuara');
+  }
+};
+
+/**
+ * Mark order as completed
+ * @param {number} id - Order ID
+ * @param {Object} completionData - Completion details
+ * @returns {Promise} - Promise with updated order data
+ */
+export const markOrderAsCompleted = async (id, completionData = {}) => {
+  try {
+    const response = await api.patch(`/orders/${id}/complete`, {
+      statusi: 'e përfunduar',
+      completedAt: new Date().toISOString(),
+      ...completionData
+    });
+    return formatOrderResponse(response.data);
+  } catch (error) {
+    console.error(`Error marking order ${id} as completed:`, error);
+    throw new Error(error.response?.data?.message || `Gabim gjatë shënimit të porosisë ${id} si e përfunduar`);
+  }
+};
+
+/**
+ * Get order history (changes, rescheduling, etc.)
+ * @param {number} id - Order ID
+ * @returns {Promise} - Promise with order history
+ */
+export const getOrderHistory = async (id) => {
+  try {
+    const response = await api.get(`/orders/${id}/history`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching order history for ${id}:`, error);
+    throw new Error(error.response?.data?.message || `Gabim gjatë marrjes së historikut të porosisë ${id}`);
+  }
+};
+
+/**
+ * Bulk reschedule orders
+ * @param {Array} orderIds - Array of order IDs
+ * @param {string} newDate - New date in YYYY-MM-DD format
+ * @param {string} reason - Reason for bulk rescheduling
+ * @returns {Promise} - Promise with bulk update result
+ */
+export const bulkRescheduleOrders = async (orderIds, newDate, reason = '') => {
+  try {
+    const response = await api.patch('/orders/bulk-reschedule', {
+      orderIds,
+      newDate,
+      reason,
+      rescheduledAt: new Date().toISOString()
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error bulk rescheduling orders:', error);
+    throw new Error(error.response?.data?.message || 'Gabim gjatë riplanifikimit në sasi të porosive');
+  }
 }; 
