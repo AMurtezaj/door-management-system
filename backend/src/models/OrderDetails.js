@@ -35,7 +35,13 @@ const OrderDetails = sequelize.define('OrderDetails', {
     },
     statusi: {
         type: DataTypes.ENUM('në proces', 'e përfunduar', 'borxh'),
-        defaultValue: 'në proces'
+        defaultValue: 'në proces',
+        comment: 'DEPRECATED: Use statusiProduktit instead. Kept for backward compatibility.'
+    },
+    statusiProduktit: {
+        type: DataTypes.ENUM('në proces', 'e përfunduar'),
+        defaultValue: 'në proces',
+        comment: 'Statusi i produktit (a është gati/dorëzuar)'
     },
     eshtePrintuar: {
         type: DataTypes.BOOLEAN,

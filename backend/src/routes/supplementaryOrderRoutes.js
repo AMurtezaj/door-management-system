@@ -18,6 +18,12 @@ router.put('/:id', auth, supplementaryOrderController.updateSupplementaryOrder);
 // Update payment status
 router.patch('/:id/payment-status', auth, supplementaryOrderController.updateSupplementaryOrderPaymentStatus);
 
+// Add partial payment to supplementary order
+router.post('/:id/partial-payment', auth, supplementaryOrderController.addPartialPaymentToSupplementaryOrder);
+
+// Update product status
+router.patch('/:id/product-status', auth, supplementaryOrderController.updateSupplementaryOrderProductStatus);
+
 // Delete supplementary order (admin only)
 router.delete('/:id', auth, isAdmin, supplementaryOrderController.deleteSupplementaryOrder);
 

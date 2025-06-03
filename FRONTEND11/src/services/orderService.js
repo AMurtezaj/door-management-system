@@ -199,6 +199,29 @@ export const updatePaymentStatus = async (id, isPaid) => {
 };
 
 /**
+ * Add partial payment to order
+ * @param {number} id - Order ID
+ * @param {number} paymentAmount - Amount to pay
+ * @param {string} paymentReceiver - Person who received the payment
+ * @returns {Promise} - Promise with updated order data
+ */
+export const addPartialPayment = async (id, paymentAmount, paymentReceiver) => {
+  try {
+    const response = await api.post(`/orders/${id}/partial-payment`, { 
+      paymentAmount: parseFloat(paymentAmount),
+      paymentReceiver 
+    });
+    return {
+      order: formatOrderResponse(response.data.order),
+      message: response.data.message
+    };
+  } catch (error) {
+    console.error(`Error adding partial payment for order ${id}:`, error);
+    throw new Error(error.response?.data?.message || `Gabim gjatë regjistrimit të pagesës për porosinë ${id}`);
+  }
+};
+
+/**
  * Update measurement status
  * @param {number} id - Order ID
  * @param {Object} measurementData - Measurement data

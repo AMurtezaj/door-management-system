@@ -18,12 +18,13 @@ const Payment = sequelize.define('Payment', {
     kaparja: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,
-        defaultValue: 0
+        defaultValue: 0,
+        comment: 'Total payments made so far (including initial down payment and partial payments)'
     },
     kaparaReceiver: {
         type: DataTypes.STRING,
         allowNull: true,
-        comment: 'Personi që mori kaparën'
+        comment: 'Person who received the last payment'
     },
     pagesaMbetur: {
         type: DataTypes.VIRTUAL,

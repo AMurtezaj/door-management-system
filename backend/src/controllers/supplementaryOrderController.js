@@ -180,6 +180,70 @@ const supplementaryOrderController = {
         }
     },
 
+    // Add partial payment to supplementary order
+    addPartialPaymentToSupplementaryOrder: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { paymentAmount, paymentReceiver } = req.body;
+            
+            if (!id || isNaN(parseInt(id))) {
+                return res.status(400).json({ 
+                    message: 'ID e porosisë shtesë është e detyrueshme dhe duhet të jetë një numër!' 
+                });
+            }
+
+            if (!paymentAmount) {
+                return res.status(400).json({ 
+                    message: 'Shuma e pagesës është e detyrueshme!' 
+                });
+            }
+
+            const supplementaryOrder = await supplementaryOrderService.addPartialPaymentToSupplementaryOrder(id, paymentAmount, paymentReceiver);
+            
+            res.json({
+                message: `Pagesa prej €${parseFloat(paymentAmount).toFixed(2)} u regjistrua me sukses për porosinë shtesë!`,
+                data: supplementaryOrder
+            });
+        } catch (error) {
+            console.error('Error adding partial payment to supplementary order:', error);
+            res.status(400).json({ 
+                message: error.message || 'Diçka shkoi keq gjatë regjistrimit të pagesës!' 
+            });
+        }
+    },
+
+    // Update product status
+    updateSupplementaryOrderProductStatus: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { statusiProduktit } = req.body;
+            
+            if (!id || isNaN(parseInt(id))) {
+                return res.status(400).json({ 
+                    message: 'ID e porosisë shtesë është e detyrueshme dhe duhet të jetë një numër!' 
+                });
+            }
+
+            if (!statusiProduktit || !['në proces', 'e përfunduar'].includes(statusiProduktit)) {
+                return res.status(400).json({ 
+                    message: 'Statusi i produktit duhet të jetë "në proces" ose "e përfunduar"' 
+                });
+            }
+
+            const supplementaryOrder = await supplementaryOrderService.updateSupplementaryOrderProductStatus(id, statusiProduktit);
+            
+            res.json({
+                message: 'Statusi i produktit u përditësua me sukses!',
+                data: supplementaryOrder
+            });
+        } catch (error) {
+            console.error('Error updating supplementary order product status:', error);
+            res.status(400).json({ 
+                message: error.message || 'Diçka shkoi keq gjatë përditësimit të statusit të produktit!' 
+            });
+        }
+    },
+
     // Delete supplementary order
     deleteSupplementaryOrder: async (req, res) => {
         try {

@@ -178,6 +178,53 @@ const orderController = {
         }
     },
 
+    // Add partial payment
+    addPartialPayment: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { paymentAmount, paymentReceiver } = req.body;
+
+            if (!paymentAmount) {
+                return res.status(400).json({ message: 'Shuma e pagesës është e detyrueshme!' });
+            }
+
+            const order = await orderService.addPartialPayment(id, paymentAmount, paymentReceiver);
+            
+            // Create notification for the payment
+            await notificationController.createOrderNotification(order.id);
+            
+            res.json({
+                message: `Pagesa prej €${parseFloat(paymentAmount).toFixed(2)} u regjistrua me sukses!`,
+                order
+            });
+        } catch (error) {
+            console.error('Error adding partial payment:', error);
+            res.status(400).json({ message: error.message || 'Diçka shkoi keq gjatë regjistrimit të pagesës!' });
+        }
+    },
+
+    // Update product status
+    updateProductStatus: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { statusiProduktit } = req.body;
+
+            if (!statusiProduktit || !['në proces', 'e përfunduar'].includes(statusiProduktit)) {
+                return res.status(400).json({ message: 'Statusi i produktit duhet të jetë "në proces" ose "e përfunduar"' });
+            }
+
+            const order = await orderService.updateProductStatus(id, statusiProduktit);
+            
+            // Create notification for the product status change
+            await notificationController.createOrderNotification(order.id);
+            
+            res.json(order);
+        } catch (error) {
+            console.error('Error updating product status:', error);
+            res.status(400).json({ message: error.message || 'Diçka shkoi keq!' });
+        }
+    },
+
     // Get cash debt orders
     getCashDebtOrders: async (req, res) => {
         try {

@@ -1,20 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Table, Badge, Button, Row, Col, Form, Alert, Spinner } from 'react-bootstrap';
+import { Container, Table, Badge, Button, Row, Col, Form, Alert, Spinner, Card } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
-import { getAllOrders, updatePaymentStatus, deleteOrder } from '../../services/orderService';
+import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
+import { sq } from 'date-fns/locale';
+import { Calendar3, ArrowRepeat } from 'react-bootstrap-icons';
+import { getAllOrders, updatePaymentStatus, deleteOrder, addPartialPayment } from '../../services/orderService';
 import { useAuth } from '../../context/AuthContext';
 import PrintInvoiceModal from './PrintInvoiceModal';
 import SupplementaryOrderForm from './SupplementaryOrderForm';
 import DimensionManager from './DimensionManager';
+import PartialPaymentModal from '../payments/PartialPaymentModal';
 
 const OrderList = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
+  const [filteredOrders, setFilteredOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState('all'); // all, inProcess, completed, debt, unpaid
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Time filtering state
+  const [timeFilter, setTimeFilter] = useState('currentWeek');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
+  const [sortOrder, setSortOrder] = useState('asc');
+  
   const { isAuthenticated, refreshAuth, canEditOrders, canManagePayments, isManager } = useAuth();
   
   // Print invoice state
@@ -25,92 +36,97 @@ const OrderList = () => {
   const [showSupplementaryForm, setShowSupplementaryForm] = useState(false);
   const [selectedParentOrder, setSelectedParentOrder] = useState(null);
   
+  // Partial payment state
+  const [showPartialPaymentModal, setShowPartialPaymentModal] = useState(false);
+  const [selectedOrderForPayment, setSelectedOrderForPayment] = useState(null);
+  
   // Fetch orders on mount and when authentication changes
   useEffect(() => {
     if (isAuthenticated) {
       fetchOrders();
     }
   }, [isAuthenticated]);
+
+  // Apply filtering and sorting when data changes
+  useEffect(() => {
+    filterAndSortOrders();
+  }, [orders, filter, searchTerm, timeFilter, customStartDate, customEndDate, sortOrder]);
   
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      setError('');
-      console.log('Fetching orders...');
       const data = await getAllOrders();
-      console.log(`Successfully fetched ${data.length} orders`);
-      console.log('First order data sample:', data[0]);
       setOrders(data);
+      setLoading(false);
     } catch (err) {
-      console.error('Error fetching orders:', err);
-      setError(`Ka ndodhur një gabim gjatë marrjes së porosive: ${err.message || 'Gabim i panjohur'}`);
-    } finally {
+      setError('Ka ndodhur një gabim gjatë marrjes së porosive');
       setLoading(false);
     }
   };
-  
-  const handlePaymentUpdate = async (id, isPaid) => {
-    try {
-      setError('');
-      console.log(`Updating payment status for order ${id} to ${isPaid ? 'paid' : 'unpaid'}`);
-      await updatePaymentStatus(id, isPaid);
-      console.log('Payment status updated successfully');
-      
-      // Update the order in the state
-      setOrders(orders.map(order => 
-        order.id === id ? { 
-          ...order, 
-          isPaymentDone: isPaid, 
-          statusi: isPaid ? 'e përfunduar' : 'borxh',
-          debtType: isPaid ? 'none' : order.menyraPageses
-        } : order
-      ));
-    } catch (err) {
-      console.error('Error updating payment status:', err);
-      setError(`Ka ndodhur një gabim gjatë përditësimit të statusit të pagesës: ${err.message || 'Gabim i panjohur'}`);
-    }
-  };
-  
-  const handleDelete = async (id) => {
-    if (!window.confirm('Jeni të sigurtë që dëshironi të fshini këtë porosi?')) {
-      return;
-    }
-    
-    try {
-      setError('');
-      console.log(`Deleting order ${id}...`);
-      await deleteOrder(id);
-      console.log(`Order ${id} deleted successfully`);
-      
-      // Remove the order from the state
-      setOrders(orders.filter(order => order.id !== id));
-    } catch (err) {
-      console.error('Error deleting order:', err);
-      setError(`Ka ndodhur një gabim gjatë fshirjes së porosisë: ${err.message || 'Gabim i panjohur'}`);
-    }
-  };
-  
-  const handleEdit = (id) => {
-    navigate(`/orders/edit/${id}`);
-  };
-  
-  const handlePrintInvoice = (order) => {
-    setSelectedOrder(order);
-    setShowPrintModal(true);
-  };
-  
-  const handleAddSupplementaryOrder = (order) => {
-    setSelectedParentOrder(order);
-    setShowSupplementaryForm(true);
-  };
-  
-  const handleSupplementaryOrderSuccess = () => {
-    // Refresh orders to show updated data
-    fetchOrders();
-  };
-  
-  const filteredOrders = () => {
+
+  const filterAndSortOrders = () => {
     let filtered = [...orders];
+    const today = new Date();
+    
+    // Apply time filter first
+    switch (timeFilter) {
+      case 'currentWeek':
+        const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+        const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
+        filtered = filtered.filter(order => {
+          if (!order.dita) return false;
+          const orderDate = parseISO(order.dita);
+          return isWithinInterval(orderDate, { start: weekStart, end: weekEnd });
+        });
+        break;
+        
+      case 'currentMonth':
+        const monthStart = startOfMonth(today);
+        const monthEnd = endOfMonth(today);
+        filtered = filtered.filter(order => {
+          if (!order.dita) return false;
+          const orderDate = parseISO(order.dita);
+          return isWithinInterval(orderDate, { start: monthStart, end: monthEnd });
+        });
+        break;
+        
+      case 'nextWeek':
+        const nextWeekStart = startOfWeek(new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000), { weekStartsOn: 1 });
+        const nextWeekEnd = endOfWeek(new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000), { weekStartsOn: 1 });
+        filtered = filtered.filter(order => {
+          if (!order.dita) return false;
+          const orderDate = parseISO(order.dita);
+          return isWithinInterval(orderDate, { start: nextWeekStart, end: nextWeekEnd });
+        });
+        break;
+        
+      case 'nextMonth':
+        const nextMonthStart = startOfMonth(new Date(today.getFullYear(), today.getMonth() + 1, 1));
+        const nextMonthEnd = endOfMonth(new Date(today.getFullYear(), today.getMonth() + 1, 1));
+        filtered = filtered.filter(order => {
+          if (!order.dita) return false;
+          const orderDate = parseISO(order.dita);
+          return isWithinInterval(orderDate, { start: nextMonthStart, end: nextMonthEnd });
+        });
+        break;
+        
+      case 'custom':
+        if (customStartDate && customEndDate) {
+          const start = parseISO(customStartDate);
+          const end = parseISO(customEndDate);
+          filtered = filtered.filter(order => {
+            if (!order.dita) return false;
+            const orderDate = parseISO(order.dita);
+            return isWithinInterval(orderDate, { start, end });
+          });
+        }
+        break;
+        
+      case 'all':
+      default:
+        // No time filtering
+        break;
+    }
     
     // Apply status filter
     if (filter === 'inProcess') {
@@ -135,10 +151,151 @@ const OrderList = () => {
         order.installer?.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
+
+    // Apply sorting by delivery date
+    const sorted = filtered.sort((a, b) => {
+      if (!a.dita && !b.dita) return 0;
+      if (!a.dita) return 1;
+      if (!b.dita) return -1;
+      
+      const dateA = new Date(a.dita);
+      const dateB = new Date(b.dita);
+      
+      return sortOrder === 'asc' 
+        ? dateA - dateB 
+        : dateB - dateA;
+    });
     
-    return filtered;
+    setFilteredOrders(sorted);
   };
-  
+
+  const handleTimeFilterChange = (newFilter) => {
+    setTimeFilter(newFilter);
+    if (newFilter !== 'custom') {
+      setCustomStartDate('');
+      setCustomEndDate('');
+    }
+  };
+
+  const getFilterDescription = () => {
+    const today = new Date();
+    
+    switch (timeFilter) {
+      case 'currentWeek':
+        const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+        const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
+        return `Java aktuale (${format(weekStart, 'dd/MM')} - ${format(weekEnd, 'dd/MM')})`;
+        
+      case 'currentMonth':
+        return `Muaji aktual (${format(today, 'MMMM yyyy', { locale: sq })})`;
+        
+      case 'nextWeek':
+        const nextWeekStart = startOfWeek(new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000), { weekStartsOn: 1 });
+        const nextWeekEnd = endOfWeek(new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000), { weekStartsOn: 1 });
+        return `Java e ardhshme (${format(nextWeekStart, 'dd/MM')} - ${format(nextWeekEnd, 'dd/MM')})`;
+        
+      case 'nextMonth':
+        const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        return `Muaji i ardhshëm (${format(nextMonth, 'MMMM yyyy', { locale: sq })})`;
+        
+      case 'custom':
+        if (customStartDate && customEndDate) {
+          return `Interval i zgjedhur (${format(parseISO(customStartDate), 'dd/MM/yyyy')} - ${format(parseISO(customEndDate), 'dd/MM/yyyy')})`;
+        }
+        return 'Interval i personalizuar';
+        
+      case 'all':
+      default:
+        return 'Të gjitha porositë';
+    }
+  };
+
+  const toggleSortOrder = () => {
+    setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+  };
+
+  const handlePaymentUpdate = async (id, isPaymentDone) => {
+    try {
+      await updatePaymentStatus(id, isPaymentDone);
+      setOrders(orders.map(order => 
+        order.id === id ? { ...order, isPaymentDone } : order
+      ));
+    } catch (err) {
+      setError('Ka ndodhur një gabim gjatë përditësimit të pagesës');
+    }
+  };
+
+  const handlePartialPayment = (order) => {
+    setSelectedOrderForPayment(order);
+    setShowPartialPaymentModal(true);
+  };
+
+  const handlePartialPaymentSuccess = async ({ orderId, paymentAmount, paymentReceiver, isSupplementaryOrder }) => {
+    try {
+      const result = await addPartialPayment(orderId, paymentAmount, paymentReceiver);
+      
+      // Update the order in the list
+      setOrders(orders.map(order => 
+        order.id === orderId ? result.order : order
+      ));
+      
+      // Show success message
+      setError('');
+      // You could add a success toast here if you have a toast system
+      alert(result.message);
+      
+    } catch (err) {
+      throw err; // Let the modal handle the error display
+    }
+  };
+
+  const handleCancelPayment = async (order) => {
+    if (!window.confirm('Jeni të sigurtë që dëshironi të anuloni pagesën për këtë porosi?')) {
+      return;
+    }
+    
+    try {
+      await updatePaymentStatus(order.id, false);
+      setOrders(orders.map(o => 
+        o.id === order.id ? { ...o, isPaymentDone: false } : o
+      ));
+    } catch (err) {
+      setError('Ka ndodhur një gabim gjatë anulimit të pagesës');
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Jeni të sigurtë që dëshironi të fshini këtë porosi?')) {
+      return;
+    }
+    
+    try {
+      await deleteOrder(id);
+      setOrders(orders.filter(order => order.id !== id));
+    } catch (err) {
+      setError('Ka ndodhur një gabim gjatë fshirjes së porosisë');
+    }
+  };
+
+  const handleEdit = (id) => {
+    navigate(`/orders/edit/${id}`);
+  };
+
+  const handlePrintInvoice = (order) => {
+    setSelectedOrder(order);
+    setShowPrintModal(true);
+  };
+
+  const handleAddSupplementaryOrder = (order) => {
+    setSelectedParentOrder(order);
+    setShowSupplementaryForm(true);
+  };
+
+  const handleSupplementaryOrderSuccess = () => {
+    // Refresh orders to show updated data
+    fetchOrders();
+  };
+
   const getStatusBadge = (status) => {
     switch (status) {
       case 'në proces':
@@ -151,13 +308,13 @@ const OrderList = () => {
         return <Badge bg="secondary">{status}</Badge>;
     }
   };
-  
+
   const getMeasurementStatusBadge = (status) => {
     switch (status) {
-      case 'e pamatur':
-        return <Badge bg="warning">E Pamatur</Badge>;
       case 'e matur':
         return <Badge bg="success">E Matur</Badge>;
+      case 'e pamatur':
+        return <Badge bg="warning">E Pamatur</Badge>;
       default:
         return <Badge bg="secondary">{status}</Badge>;
     }
@@ -173,7 +330,7 @@ const OrderList = () => {
       </Container>
     );
   }
-  
+
   return (
     <Container className="mt-4">
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -182,6 +339,112 @@ const OrderList = () => {
           <i className="bi bi-arrow-clockwise me-1"></i> Rifresko
         </Button>
       </div>
+
+      {/* Time Filter Controls */}
+      <Card className="mb-4" style={{ background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)', border: '1px solid rgba(0,0,0,0.05)' }}>
+        <Card.Body>
+          <Row className="align-items-center">
+            <Col md={8}>
+              <div className="d-flex flex-wrap align-items-center gap-3">
+                <div className="d-flex align-items-center">
+                  <Calendar3 className="me-2 text-primary" size={20} />
+                  <strong>Filtro sipas kohës:</strong>
+                </div>
+                
+                <div className="d-flex flex-wrap gap-2">
+                  <Button
+                    variant={timeFilter === 'currentWeek' ? 'primary' : 'outline-primary'}
+                    size="sm"
+                    onClick={() => handleTimeFilterChange('currentWeek')}
+                  >
+                    Java Aktuale
+                  </Button>
+                  <Button
+                    variant={timeFilter === 'nextWeek' ? 'primary' : 'outline-primary'}
+                    size="sm"
+                    onClick={() => handleTimeFilterChange('nextWeek')}
+                  >
+                    Java e Ardhshme
+                  </Button>
+                  <Button
+                    variant={timeFilter === 'currentMonth' ? 'primary' : 'outline-primary'}
+                    size="sm"
+                    onClick={() => handleTimeFilterChange('currentMonth')}
+                  >
+                    Muaji Aktual
+                  </Button>
+                  <Button
+                    variant={timeFilter === 'nextMonth' ? 'primary' : 'outline-primary'}
+                    size="sm"
+                    onClick={() => handleTimeFilterChange('nextMonth')}
+                  >
+                    Muaji i Ardhshëm
+                  </Button>
+                  <Button
+                    variant={timeFilter === 'custom' ? 'primary' : 'outline-secondary'}
+                    size="sm"
+                    onClick={() => handleTimeFilterChange('custom')}
+                  >
+                    Interval i Personalizuar
+                  </Button>
+                  <Button
+                    variant={timeFilter === 'all' ? 'warning' : 'outline-warning'}
+                    size="sm"
+                    onClick={() => handleTimeFilterChange('all')}
+                  >
+                    Të Gjitha
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Custom Date Range */}
+              {timeFilter === 'custom' && (
+                <Row className="mt-3">
+                  <Col md={4}>
+                    <Form.Label className="small">Data e fillimit:</Form.Label>
+                    <Form.Control
+                      type="date"
+                      size="sm"
+                      value={customStartDate}
+                      onChange={(e) => setCustomStartDate(e.target.value)}
+                    />
+                  </Col>
+                  <Col md={4}>
+                    <Form.Label className="small">Data e mbarimit:</Form.Label>
+                    <Form.Control
+                      type="date"
+                      size="sm"
+                      value={customEndDate}
+                      onChange={(e) => setCustomEndDate(e.target.value)}
+                    />
+                  </Col>
+                </Row>
+              )}
+              
+              {/* Filter Description */}
+              <div className="mt-2">
+                <Badge bg="info" className="me-2">
+                  {filteredOrders.length} porosi
+                </Badge>
+                <small className="text-muted">
+                  Duke shfaqur: <strong>{getFilterDescription()}</strong>
+                </small>
+              </div>
+            </Col>
+            
+            <Col md={4} className="text-end">
+              <Button 
+                variant="outline-secondary" 
+                size="sm"
+                onClick={toggleSortOrder}
+              >
+                <ArrowRepeat className="me-2" size={16} />
+                {sortOrder === 'desc' ? 'Më të vjetrat para' : 'Më të rejat para'}
+              </Button>
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
       
       {isManager && (
         <Alert variant="info" className="mb-4">
@@ -244,7 +507,7 @@ const OrderList = () => {
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
           >
-            <option value="all">Të Gjitha</option>
+            <option value="all">Të Gjitha Statuset</option>
             <option value="inProcess">Në Proces</option>
             <option value="completed">Të Përfunduara</option>
             <option value="debt">Borxhe</option>
@@ -269,7 +532,7 @@ const OrderList = () => {
           </tr>
         </thead>
         <tbody>
-          {filteredOrders().map(order => (
+          {filteredOrders.map(order => (
             <tr key={order.id}>
               <td>
                 #{order.id}
@@ -287,7 +550,7 @@ const OrderList = () => {
                 <small>
                   {order.isPaymentDone ? 
                     <Badge bg="success">Paguar</Badge> : 
-                    <Badge bg="danger">Papaguar: {(parseFloat(order.cmimiTotal) - parseFloat(order.kaparja)).toFixed(2)} €</Badge>
+                    <Badge bg="danger">Papaguar: {(parseFloat(order.cmimiTotal) - parseFloat(order.kaparja || 0)).toFixed(2)} €</Badge>
                   }
                 </small>
               </td>
@@ -342,7 +605,7 @@ const OrderList = () => {
                     <Button 
                       variant="success" 
                       size="sm" 
-                      onClick={() => handlePaymentUpdate(order.id, true)}
+                      onClick={() => handlePartialPayment(order)}
                     >
                       Paguaj
                     </Button>
@@ -352,7 +615,7 @@ const OrderList = () => {
                     <Button 
                       variant="warning" 
                       size="sm" 
-                      onClick={() => handlePaymentUpdate(order.id, false)}
+                      onClick={() => handleCancelPayment(order)}
                     >
                       Anulo Pagesën
                     </Button>
@@ -383,12 +646,25 @@ const OrderList = () => {
             </tr>
           ))}
           
-          {filteredOrders().length === 0 && (
+          {filteredOrders.length === 0 && (
             <tr>
               <td colSpan="10" className="text-center py-4">
-                {searchTerm || filter !== 'all' ? 
-                  'Nuk u gjetën porosi me kriteret e zgjedhura' : 
-                  'Nuk ka porosi të regjistruara'
+                {timeFilter !== 'all' ? 
+                  <>
+                    Nuk ka porosi për {getFilterDescription().toLowerCase()}
+                    <div className="mt-2">
+                      <Button
+                        variant="outline-primary"
+                        size="sm"
+                        onClick={() => handleTimeFilterChange('all')}
+                      >
+                        Shiko të gjitha porositë
+                      </Button>
+                    </div>
+                  </> :
+                  (searchTerm || filter !== 'all' ? 
+                    'Nuk u gjetën porosi me kriteret e zgjedhura' : 
+                    'Nuk ka porosi të regjistruara')
                 }
               </td>
             </tr>
@@ -416,6 +692,17 @@ const OrderList = () => {
         }}
         parentOrder={selectedParentOrder}
         onSuccess={handleSupplementaryOrderSuccess}
+      />
+      
+      {/* Partial Payment Modal */}
+      <PartialPaymentModal
+        show={showPartialPaymentModal}
+        onHide={() => {
+          setShowPartialPaymentModal(false);
+          setSelectedOrderForPayment(null);
+        }}
+        order={selectedOrderForPayment}
+        onPaymentSuccess={handlePartialPaymentSuccess}
       />
     </Container>
   );

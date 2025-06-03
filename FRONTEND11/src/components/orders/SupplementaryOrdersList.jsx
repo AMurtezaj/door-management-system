@@ -3,9 +3,11 @@ import { Card, Table, Badge, Button, Alert, Spinner } from 'react-bootstrap';
 import { 
   getSupplementaryOrdersByParentId, 
   updateSupplementaryOrderPaymentStatus, 
-  deleteSupplementaryOrder 
+  deleteSupplementaryOrder,
+  addPartialPaymentToSupplementaryOrder
 } from '../../services/supplementaryOrderService';
 import { useAuth } from '../../context/AuthContext';
+import PartialPaymentModal from '../payments/PartialPaymentModal';
 
 const SupplementaryOrdersList = ({ parentOrderId, onUpdate }) => {
   const { canManagePayments, canEditOrders, isManager } = useAuth();
@@ -13,6 +15,10 @@ const SupplementaryOrdersList = ({ parentOrderId, onUpdate }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [actionLoading, setActionLoading] = useState({});
+  
+  // Partial payment state
+  const [showPartialPaymentModal, setShowPartialPaymentModal] = useState(false);
+  const [selectedOrderForPayment, setSelectedOrderForPayment] = useState(null);
 
   useEffect(() => {
     if (parentOrderId) {
@@ -61,6 +67,61 @@ const SupplementaryOrdersList = ({ parentOrderId, onUpdate }) => {
       setError(err.message || 'Gabim gjatë përditësimit të statusit të pagesës');
     } finally {
       setActionLoading(prev => ({ ...prev, [`payment_${id}`]: false }));
+    }
+  };
+
+  const handlePartialPayment = (order) => {
+    setSelectedOrderForPayment(order);
+    setShowPartialPaymentModal(true);
+  };
+
+  const handlePartialPaymentSuccess = async ({ orderId, paymentAmount, paymentReceiver, isSupplementaryOrder }) => {
+    try {
+      const result = await addPartialPaymentToSupplementaryOrder(orderId, paymentAmount, paymentReceiver);
+      
+      // Update the order in the list
+      setSupplementaryOrders(orders => 
+        orders.map(order => 
+          order.id === orderId ? result.supplementaryOrder : order
+        )
+      );
+      
+      // Notify parent component of update
+      if (onUpdate) {
+        onUpdate();
+      }
+      
+      // Show success message
+      setError('');
+      alert(result.message);
+      
+    } catch (err) {
+      throw err; // Let the modal handle the error display
+    }
+  };
+
+  const handleCancelPayment = async (order) => {
+    if (!window.confirm('Jeni të sigurtë që dëshironi të anuloni pagesën për këtë porosi shtesë?')) {
+      return;
+    }
+    
+    try {
+      setActionLoading(prev => ({ ...prev, [`payment_${order.id}`]: true }));
+      await updateSupplementaryOrderPaymentStatus(order.id, false);
+      
+      setSupplementaryOrders(orders => 
+        orders.map(o => 
+          o.id === order.id ? { ...o, isPaymentDone: false } : o
+        )
+      );
+      
+      if (onUpdate) {
+        onUpdate();
+      }
+    } catch (err) {
+      setError('Ka ndodhur një gabim gjatë anulimit të pagesës');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [`payment_${order.id}`]: false }));
     }
   };
 
@@ -212,7 +273,7 @@ const SupplementaryOrdersList = ({ parentOrderId, onUpdate }) => {
                         <Button 
                           variant="success" 
                           size="sm" 
-                          onClick={() => handlePaymentUpdate(order.id, true)}
+                          onClick={() => handlePartialPayment(order)}
                           disabled={actionLoading[`payment_${order.id}`]}
                         >
                           {actionLoading[`payment_${order.id}`] ? (
@@ -236,7 +297,7 @@ const SupplementaryOrdersList = ({ parentOrderId, onUpdate }) => {
                         <Button 
                           variant="warning" 
                           size="sm" 
-                          onClick={() => handlePaymentUpdate(order.id, false)}
+                          onClick={() => handleCancelPayment(order)}
                           disabled={actionLoading[`payment_${order.id}`]}
                         >
                           {actionLoading[`payment_${order.id}`] ? (
@@ -271,6 +332,17 @@ const SupplementaryOrdersList = ({ parentOrderId, onUpdate }) => {
           </Table>
         )}
       </Card.Body>
+      
+      {/* Partial Payment Modal */}
+      <PartialPaymentModal
+        show={showPartialPaymentModal}
+        onHide={() => {
+          setShowPartialPaymentModal(false);
+          setSelectedOrderForPayment(null);
+        }}
+        supplementaryOrder={selectedOrderForPayment}
+        onPaymentSuccess={handlePartialPaymentSuccess}
+      />
     </Card>
   );
 };

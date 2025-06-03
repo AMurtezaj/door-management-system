@@ -70,7 +70,12 @@ const SupplementaryOrder = sequelize.define('SupplementaryOrder', {
     statusi: {
         type: DataTypes.ENUM('në proces', 'e përfunduar', 'borxh'),
         defaultValue: 'në proces',
-        comment: 'Statusi i porosisë shtesë'
+        comment: 'DEPRECATED: Use statusiProduktit instead. Kept for backward compatibility.'
+    },
+    statusiProduktit: {
+        type: DataTypes.ENUM('në proces', 'e përfunduar'),
+        defaultValue: 'në proces',
+        comment: 'Statusi i produktit shtesë (a është gati/dorëzuar)'
     },
     createdAt: {
         type: DataTypes.DATE,

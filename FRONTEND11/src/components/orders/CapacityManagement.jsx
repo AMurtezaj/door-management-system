@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert, Table, Modal, Dropdown, Badge, ListGroup, Tooltip, OverlayTrigger } from 'react-bootstrap';
-import { format, parseISO, isAfter } from 'date-fns';
+import { format, parseISO, isAfter, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { sq } from 'date-fns/locale';
 import { 
   Calendar3, 
@@ -30,13 +30,18 @@ import './capacity.css';
 const CapacityManagement = () => {
   const { canManageCapacities } = useAuth();
   const [capacities, setCapacities] = useState([]);
-  const [sortedCapacities, setSortedCapacities] = useState([]);
+  const [filteredCapacities, setFilteredCapacities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [capacityToDelete, setCapacityToDelete] = useState(null);
-  const [sortOrder, setSortOrder] = useState('desc'); // 'desc' (newest first) or 'asc' (oldest first)
+  const [sortOrder, setSortOrder] = useState('asc'); // Show current week first
+  
+  // New filter state
+  const [timeFilter, setTimeFilter] = useState('currentWeek');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
   
   // Orders modal state
   const [showOrdersModal, setShowOrdersModal] = useState(false);
@@ -66,10 +71,10 @@ const CapacityManagement = () => {
     fetchCapacities();
   }, []);
   
-  // Apply sorting when capacities or sort order changes
+  // Apply filtering and sorting when capacities, filter, or sort order changes
   useEffect(() => {
-    sortCapacities();
-  }, [capacities, sortOrder]);
+    filterAndSortCapacities();
+  }, [capacities, timeFilter, customStartDate, customEndDate, sortOrder]);
   
   const fetchCapacities = async () => {
     try {
@@ -83,8 +88,67 @@ const CapacityManagement = () => {
     }
   };
   
-  const sortCapacities = () => {
-    const sorted = [...capacities].sort((a, b) => {
+  const filterAndSortCapacities = () => {
+    let filtered = [...capacities];
+    const today = new Date();
+    
+    // Apply time filter
+    switch (timeFilter) {
+      case 'currentWeek':
+        const weekStart = startOfWeek(today, { weekStartsOn: 1 }); // Monday start
+        const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
+        filtered = filtered.filter(capacity => {
+          const capacityDate = parseISO(capacity.dita);
+          return isWithinInterval(capacityDate, { start: weekStart, end: weekEnd });
+        });
+        break;
+        
+      case 'currentMonth':
+        const monthStart = startOfMonth(today);
+        const monthEnd = endOfMonth(today);
+        filtered = filtered.filter(capacity => {
+          const capacityDate = parseISO(capacity.dita);
+          return isWithinInterval(capacityDate, { start: monthStart, end: monthEnd });
+        });
+        break;
+        
+      case 'nextWeek':
+        const nextWeekStart = startOfWeek(new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000), { weekStartsOn: 1 });
+        const nextWeekEnd = endOfWeek(new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000), { weekStartsOn: 1 });
+        filtered = filtered.filter(capacity => {
+          const capacityDate = parseISO(capacity.dita);
+          return isWithinInterval(capacityDate, { start: nextWeekStart, end: nextWeekEnd });
+        });
+        break;
+        
+      case 'nextMonth':
+        const nextMonthStart = startOfMonth(new Date(today.getFullYear(), today.getMonth() + 1, 1));
+        const nextMonthEnd = endOfMonth(new Date(today.getFullYear(), today.getMonth() + 1, 1));
+        filtered = filtered.filter(capacity => {
+          const capacityDate = parseISO(capacity.dita);
+          return isWithinInterval(capacityDate, { start: nextMonthStart, end: nextMonthEnd });
+        });
+        break;
+        
+      case 'custom':
+        if (customStartDate && customEndDate) {
+          const start = parseISO(customStartDate);
+          const end = parseISO(customEndDate);
+          filtered = filtered.filter(capacity => {
+            const capacityDate = parseISO(capacity.dita);
+            return isWithinInterval(capacityDate, { start, end });
+          });
+        }
+        break;
+        
+      case 'all':
+      default:
+        // No filtering, show all
+        break;
+    }
+    
+    // Apply sorting
+    const sorted = filtered.sort((a, b) => {
       const dateA = new Date(a.dita);
       const dateB = new Date(b.dita);
       
@@ -93,11 +157,52 @@ const CapacityManagement = () => {
         : dateB - dateA; // Newest first
     });
     
-    setSortedCapacities(sorted);
+    setFilteredCapacities(sorted);
   };
   
   const toggleSortOrder = () => {
     setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+  };
+  
+  const handleTimeFilterChange = (newFilter) => {
+    setTimeFilter(newFilter);
+    if (newFilter !== 'custom') {
+      setCustomStartDate('');
+      setCustomEndDate('');
+    }
+  };
+  
+  const getFilterDescription = () => {
+    const today = new Date();
+    
+    switch (timeFilter) {
+      case 'currentWeek':
+        const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+        const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
+        return `Java aktuale (${format(weekStart, 'dd/MM')} - ${format(weekEnd, 'dd/MM')})`;
+        
+      case 'currentMonth':
+        return `Muaji aktual (${format(today, 'MMMM yyyy', { locale: sq })})`;
+        
+      case 'nextWeek':
+        const nextWeekStart = startOfWeek(new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000), { weekStartsOn: 1 });
+        const nextWeekEnd = endOfWeek(new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000), { weekStartsOn: 1 });
+        return `Java e ardhshme (${format(nextWeekStart, 'dd/MM')} - ${format(nextWeekEnd, 'dd/MM')})`;
+        
+      case 'nextMonth':
+        const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        return `Muaji i ardhshëm (${format(nextMonth, 'MMMM yyyy', { locale: sq })})`;
+        
+      case 'custom':
+        if (customStartDate && customEndDate) {
+          return `Interval i zgjedhur (${format(parseISO(customStartDate), 'dd/MM/yyyy')} - ${format(parseISO(customEndDate), 'dd/MM/yyyy')})`;
+        }
+        return 'Interval i personalizuar';
+        
+      case 'all':
+      default:
+        return 'Të gjitha kapacitetet';
+    }
   };
   
   const handleChange = (e) => {
@@ -179,14 +284,15 @@ const CapacityManagement = () => {
     }
   };
   
-  const handleShowOrders = async (date) => {
+  const handleViewOrders = async (date) => {
     setSelectedDate(date);
-    setShowOrdersModal(true);
     setLoadingOrders(true);
+    setShowOrdersModal(true);
     
     try {
-      const orders = await getOrdersByDay(date);
-      setOrdersForDate(orders);
+      const parsedDate = parseISO(date);
+      const dayOrders = getOrdersForDay(parsedDate);
+      setOrdersForDate(dayOrders);
     } catch (err) {
       console.error('Error fetching orders for date:', err);
       setOrdersForDate([]);
@@ -284,7 +390,7 @@ const CapacityManagement = () => {
               transition: 'all 0.3s ease',
               position: 'relative'
             }}
-            onClick={() => handleOrderSquareClick(order)}
+            onClick={() => handleOrderClick(order)}
             onMouseOver={(e) => {
               e.target.style.transform = 'scale(1.1)';
               e.target.style.boxShadow = '0 4px 8px rgba(0,0,0,0.3)';
@@ -355,7 +461,7 @@ const CapacityManagement = () => {
   };
   
   // Handle clicking on individual order squares
-  const handleOrderSquareClick = (order) => {
+  const handleOrderClick = (order) => {
     setSelectedOrder(order);
     setShowOrderDetailsModal(true);
   };
@@ -375,6 +481,113 @@ const CapacityManagement = () => {
     <Container className="py-4">
       {/* Page Title */}
       <h2 className="mb-4">Menaxhimi i kapacitetit ditor</h2>
+
+      {/* Time Filter Controls */}
+      <Card className="mb-4" style={{ background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)', border: '1px solid rgba(0,0,0,0.05)' }}>
+        <Card.Body>
+          <Row className="align-items-center">
+            <Col md={8}>
+              <div className="d-flex flex-wrap align-items-center gap-3">
+                <div className="d-flex align-items-center">
+                  <Calendar3 className="me-2 text-primary" size={20} />
+                  <strong>Filtro sipas kohës:</strong>
+                </div>
+                
+                <div className="d-flex flex-wrap gap-2">
+                  <Button
+                    variant={timeFilter === 'currentWeek' ? 'primary' : 'outline-primary'}
+                    size="sm"
+                    onClick={() => handleTimeFilterChange('currentWeek')}
+                  >
+                    Java Aktuale
+                  </Button>
+                  <Button
+                    variant={timeFilter === 'nextWeek' ? 'primary' : 'outline-primary'}
+                    size="sm"
+                    onClick={() => handleTimeFilterChange('nextWeek')}
+                  >
+                    Java e Ardhshme
+                  </Button>
+                  <Button
+                    variant={timeFilter === 'currentMonth' ? 'primary' : 'outline-primary'}
+                    size="sm"
+                    onClick={() => handleTimeFilterChange('currentMonth')}
+                  >
+                    Muaji Aktual
+                  </Button>
+                  <Button
+                    variant={timeFilter === 'nextMonth' ? 'primary' : 'outline-primary'}
+                    size="sm"
+                    onClick={() => handleTimeFilterChange('nextMonth')}
+                  >
+                    Muaji i Ardhshëm
+                  </Button>
+                  <Button
+                    variant={timeFilter === 'custom' ? 'primary' : 'outline-secondary'}
+                    size="sm"
+                    onClick={() => handleTimeFilterChange('custom')}
+                  >
+                    Interval i Personalizuar
+                  </Button>
+                  <Button
+                    variant={timeFilter === 'all' ? 'warning' : 'outline-warning'}
+                    size="sm"
+                    onClick={() => handleTimeFilterChange('all')}
+                  >
+                    Të Gjitha
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Custom Date Range */}
+              {timeFilter === 'custom' && (
+                <Row className="mt-3">
+                  <Col md={4}>
+                    <Form.Label className="small">Data e fillimit:</Form.Label>
+                    <Form.Control
+                      type="date"
+                      size="sm"
+                      value={customStartDate}
+                      onChange={(e) => setCustomStartDate(e.target.value)}
+                    />
+                  </Col>
+                  <Col md={4}>
+                    <Form.Label className="small">Data e mbarimit:</Form.Label>
+                    <Form.Control
+                      type="date"
+                      size="sm"
+                      value={customEndDate}
+                      onChange={(e) => setCustomEndDate(e.target.value)}
+                    />
+                  </Col>
+                </Row>
+              )}
+              
+              {/* Filter Description */}
+              <div className="mt-2">
+                <Badge bg="info" className="me-2">
+                  {filteredCapacities.length} kapacitete
+                </Badge>
+                <small className="text-muted">
+                  Duke shfaqur: <strong>{getFilterDescription()}</strong>
+                </small>
+              </div>
+            </Col>
+            
+            <Col md={4} className="text-end">
+              <Button 
+                variant="outline-secondary" 
+                size="sm"
+                onClick={toggleSortOrder}
+                className="modern-btn-outline"
+              >
+                <ArrowRepeat className="me-2" size={16} />
+                {sortOrder === 'desc' ? 'Më të vjetrat para' : 'Më të rejat para'}
+              </Button>
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
 
       {/* Color Legend Information Card */}
       <Card className="mb-4" style={{ background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)', border: '1px solid rgba(0,0,0,0.05)' }}>
@@ -516,15 +729,6 @@ const CapacityManagement = () => {
               <BarChart className="me-2" size={20} />
               <h5 className="mb-0">Kapacitetet e Konfiguruara</h5>
             </div>
-            <Button 
-              variant="outline-secondary" 
-              size="sm"
-              onClick={toggleSortOrder}
-              className="modern-btn-outline"
-            >
-              <ArrowRepeat className="me-2" size={16} />
-              {sortOrder === 'desc' ? 'Më të vjetrat para' : 'Më të rejat para'}
-            </Button>
           </div>
         </Card.Header>
         <Card.Body className="p-0">
@@ -535,7 +739,7 @@ const CapacityManagement = () => {
               </div>
               <p className="mt-3 text-muted">Duke ngarkuar kapacitetet...</p>
             </div>
-          ) : sortedCapacities.length > 0 ? (
+          ) : filteredCapacities.length > 0 ? (
             <div className="table-responsive">
               <Table className="modern-table mb-0">
                 <thead>
@@ -548,7 +752,7 @@ const CapacityManagement = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedCapacities.map(capacity => (
+                  {filteredCapacities.map(capacity => (
                     <tr key={capacity.id || capacity.dita}>
                       <td>
                         <div className="date-cell">
@@ -575,7 +779,7 @@ const CapacityManagement = () => {
                       <td>
                         <div className="capacity-cell">
                           <div className="capacity-number">
-                            <BarChart className="me-2 text-info" size={16} />
+                            <BarChart className="me-2 text-success" size={16} />
                             <strong>{capacity.kapake}</strong>
                           </div>
                           <div className="capacity-visual mt-2">
@@ -584,34 +788,37 @@ const CapacityManagement = () => {
                         </div>
                       </td>
                       <td>
-                        <div className="action-buttons">
-                          {canManageCapacities && (
-                            <Button 
-                              variant="outline-primary" 
-                              size="sm" 
-                              onClick={() => handleEdit(capacity)}
-                              className="action-btn"
-                            >
-                              <Pencil size={14} />
-                            </Button>
-                          )}
-                          <Button 
-                            variant="outline-info" 
-                            size="sm" 
-                            onClick={() => handleShowOrders(capacity.dita)}
-                            className="action-btn"
+                        <div className="d-flex gap-2">
+                          <Button
+                            variant="info"
+                            size="sm"
+                            onClick={() => handleViewOrders(capacity.dita)}
+                            className="modern-btn-info"
+                            title="Shiko porositë"
                           >
-                            <Eye size={14} />
+                            <Calendar3 size={14} />
                           </Button>
                           {canManageCapacities && (
-                            <Button 
-                              variant="outline-danger" 
-                              size="sm" 
-                              onClick={() => handleDeleteClick(capacity)}
-                              className="action-btn"
-                            >
-                              <Trash size={14} />
-                            </Button>
+                            <>
+                              <Button
+                                variant="warning"
+                                size="sm"
+                                onClick={() => handleEdit(capacity)}
+                                className="modern-btn-warning"
+                                title="Ndrysho"
+                              >
+                                <BarChart size={14} />
+                              </Button>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() => handleDeleteClick(capacity)}
+                                className="modern-btn-danger"
+                                title="Fshi"
+                              >
+                                <Trash size={14} />
+                              </Button>
+                            </>
                           )}
                         </div>
                       </td>
@@ -623,8 +830,25 @@ const CapacityManagement = () => {
           ) : (
             <div className="empty-state">
               <Calendar3 size={48} className="text-muted mb-3" />
-              <h5>Nuk ka kapacitete të konfiguruar</h5>
-              <p className="text-muted">Ju lutem shtoni një kapacitet të ri për të filluar.</p>
+              <h5>
+                {timeFilter === 'all' ? 'Nuk ka kapacitete të konfiguruar' : 'Nuk ka kapacitete për këtë periudhë'}
+              </h5>
+              <p className="text-muted">
+                {timeFilter === 'all' 
+                  ? 'Ju lutem shtoni një kapacitet të ri për të filluar.'
+                  : `Nuk ka kapacitete të konfiguruar për ${getFilterDescription().toLowerCase()}. Provoni një filtër tjetër ose shtoni kapacitete të reja.`
+                }
+              </p>
+              {timeFilter !== 'all' && (
+                <Button
+                  variant="outline-primary"
+                  size="sm"
+                  onClick={() => handleTimeFilterChange('all')}
+                  className="mt-2"
+                >
+                  Shiko të gjitha kapacitetet
+                </Button>
+              )}
             </div>
           )}
         </Card.Body>
@@ -666,109 +890,85 @@ const CapacityManagement = () => {
       <Modal show={showOrdersModal} onHide={() => setShowOrdersModal(false)} size="lg" centered>
         <Modal.Header closeButton className="modern-modal-header">
           <Modal.Title>
-            <Eye className="me-2 text-primary" />
-            Porositë për {selectedDate ? format(new Date(selectedDate), 'dd/MM/yyyy', { locale: sq }) : ''}
+            <Calendar3 className="me-2" />
+            Porositë për {selectedDate && format(new Date(selectedDate), 'dd/MM/yyyy EEEE', { locale: sq })}
           </Modal.Title>
         </Modal.Header>
         <Modal.Body className="modern-modal-body">
           {loadingOrders ? (
-            <div className="loading-state">
-              <div className="spinner-border text-warning" role="status">
+            <div className="text-center py-4">
+              <div className="spinner-border text-primary" role="status">
                 <span className="visually-hidden">Duke ngarkuar...</span>
               </div>
-              <p className="mt-3">Duke ngarkuar porositë...</p>
+              <p className="mt-3 text-muted">Duke ngarkuar porositë...</p>
             </div>
           ) : ordersForDate.length > 0 ? (
             <div className="orders-list">
-              {ordersForDate.map((order, index) => (
-                <div key={order.id} className="order-card">
-                  <div className="order-header">
-                    <div className="customer-info">
-                      <h6 className="customer-name">
-                        <Person className="me-2" size={16} />
-                        {order.Customer?.emriKlientit} {order.Customer?.mbiemriKlientit}
-                      </h6>
-                      <div className="order-badge">
-                        {getStatusBadge(order)}
-                      </div>
-                    </div>
-                    <div className="order-id">
-                      #{order.id}
-                    </div>
-                  </div>
-                  <div className="order-details">
-                    <div className="detail-item">
-                      <Phone size={14} className="me-2 text-muted" />
-                      <span>{order.Customer?.numriTelefonit}</span>
-                    </div>
-                    <div className="detail-item">
-                      <GeoAlt size={14} className="me-2 text-muted" />
-                      <span>{order.Customer?.vendi}</span>
-                    </div>
-                    <div className="detail-item">
-                      <DoorOpen size={14} className="me-2 text-muted" />
-                      <span>{order.OrderDetail?.tipiPorosise}</span>
-                    </div>
-                    <div className="detail-item">
-                      <CurrencyEuro size={14} className="me-2 text-muted" />
-                      <span>{order.Payment?.cmimiTotal}€ (Kaparja: {order.Payment?.kaparja}€)</span>
-                    </div>
-                    <div className="detail-item">
-                      <Person size={14} className="me-2 text-muted" />
-                      <span>Shitësi: {order.OrderDetail?.shitesi}</span>
-                    </div>
-                  </div>
-                </div>
+              {ordersForDate.map(order => (
+                <Card key={order.id} className="mb-3 order-card">
+                  <Card.Body>
+                    <Row>
+                      <Col md={8}>
+                        <div className="d-flex align-items-center mb-2">
+                          <Badge bg="primary" className="me-2">#{order.id}</Badge>
+                          <strong>{order.emriKlientit} {order.mbiemriKlientit}</strong>
+                        </div>
+                        <div className="order-details">
+                          <div className="detail-item">
+                            <DoorOpen className="me-2 text-muted" size={14} />
+                            <span className="me-3"><strong>Tipi:</strong> {order.tipiPorosise}</span>
+                          </div>
+                          <div className="detail-item">
+                            <Person className="me-2 text-muted" size={14} />
+                            <span><strong>Shitësi:</strong> {order.shitesi}</span>
+                          </div>
+                        </div>
+                      </Col>
+                      <Col md={4} className="text-end">
+                        <Badge 
+                          bg={getDayStatus(order) === 'completed' ? 'success' : 
+                              getDayStatus(order) === 'overdue' ? 'danger' : 'warning'} 
+                          className="mb-2"
+                        >
+                          {getDayStatus(order) === 'completed' ? 'E përfunduar' : 
+                           getDayStatus(order) === 'overdue' ? 'E vonuar' : 'E planifikuar'}
+                        </Badge>
+                        <div>
+                          <Button
+                            variant="outline-primary"
+                            size="sm"
+                            onClick={() => handleOrderClick(order)}
+                          >
+                            Detaje
+                          </Button>
+                        </div>
+                      </Col>
+                    </Row>
+                  </Card.Body>
+                </Card>
               ))}
             </div>
           ) : (
-            <div className="empty-state">
-              <CalendarCheck size={48} className="text-muted mb-3" />
-              <h5>Nuk ka porosi</h5>
-              <p className="text-muted">Nuk ka porosi të regjistruara për këtë ditë.</p>
+            <div className="text-center py-4">
+              <Calendar3 size={48} className="text-muted mb-3" />
+              <h5>Nuk ka porosi për këtë ditë</h5>
+              <p className="text-muted">Nuk ka porosi të regjistruara për {selectedDate && format(new Date(selectedDate), 'dd/MM/yyyy')}.</p>
             </div>
           )}
         </Modal.Body>
-        <Modal.Footer className="modern-modal-footer">
-          <Button variant="outline-secondary" onClick={() => setShowOrdersModal(false)}>
-            Mbyll
-          </Button>
-        </Modal.Footer>
       </Modal>
       
-      {/* Individual Order Details Modal */}
+      {/* Order Details Modal */}
       <Modal show={showOrderDetailsModal} onHide={() => setShowOrderDetailsModal(false)} size="lg" centered>
         <Modal.Header closeButton className="modern-modal-header">
           <Modal.Title>
-            <InfoCircle className="me-2 text-primary" />
+            <DoorOpen className="me-2" />
             Detajet e Porosisë #{selectedOrder?.id}
           </Modal.Title>
         </Modal.Header>
         <Modal.Body className="modern-modal-body">
           {selectedOrder && (
             <div>
-              {/* Status Badge */}
-              <div className="text-center mb-4">
-                <div className="order-status-display">
-                  {selectedOrder.statusi === 'e përfunduar' ? (
-                    <div className="status-icon completed">
-                      <CheckCircleFill size={32} className="text-success" />
-                      <h5 className="mt-2 text-success">E Përfunduar</h5>
-                    </div>
-                  ) : isAfter(new Date(), parseISO(selectedOrder.dita)) ? (
-                    <div className="status-icon overdue">
-                      <ExclamationTriangleFill size={32} className="text-warning" />
-                      <h5 className="mt-2 text-warning">E Vonuar</h5>
-                    </div>
-                  ) : (
-                    <div className="status-icon scheduled">
-                      <Clock size={32} className="text-danger" />
-                      <h5 className="mt-2 text-danger">E Planifikuar</h5>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
               {/* Customer Information */}
               <Card className="mb-3">
                 <Card.Header className="bg-light">
@@ -784,7 +984,6 @@ const CapacityManagement = () => {
                         <strong>Emri:</strong> {selectedOrder.emriKlientit} {selectedOrder.mbiemriKlientit}
                       </div>
                       <div className="detail-item mb-2">
-                        <Phone size={14} className="me-2 text-muted" />
                         <strong>Telefoni:</strong> {selectedOrder.numriTelefonit}
                       </div>
                     </Col>
@@ -795,7 +994,8 @@ const CapacityManagement = () => {
                       </div>
                       <div className="detail-item mb-2">
                         <DoorOpen size={14} className="me-2 text-muted" />
-                        <strong>Tipi:</strong> {selectedOrder.tipiPorosise}
+                        <strong>Tipi i Porosisë:</strong> 
+                        <Badge bg="info" className="ms-2">{selectedOrder.tipiPorosise}</Badge>
                       </div>
                     </Col>
                   </Row>
@@ -829,16 +1029,20 @@ const CapacityManagement = () => {
                       )}
                     </Col>
                     <Col md={6}>
-                      {selectedOrder.dataMatjes && (
+                      {selectedOrder.installer && (
                         <div className="detail-item mb-2">
-                          <Calendar3 size={14} className="me-2 text-muted" />
-                          <strong>Data e Matjes:</strong> {format(parseISO(selectedOrder.dataMatjes), 'dd/MM/yyyy', { locale: sq })}
+                          <Person size={14} className="me-2 text-muted" />
+                          <strong>Instaluesi:</strong> {selectedOrder.installer}
                         </div>
                       )}
                       <div className="detail-item mb-2">
-                        <strong>Statusi i Matjes:</strong> 
-                        <Badge bg={selectedOrder.statusiMatjes === 'e matur' ? 'success' : 'warning'} className="ms-2">
-                          {selectedOrder.statusiMatjes}
+                        <strong>Statusi:</strong>
+                        <Badge 
+                          bg={selectedOrder.statusi === 'e përfunduar' ? 'success' : 
+                              selectedOrder.statusi === 'në proces' ? 'warning' : 'danger'} 
+                          className="ms-2"
+                        >
+                          {selectedOrder.statusi}
                         </Badge>
                       </div>
                     </Col>
@@ -847,42 +1051,36 @@ const CapacityManagement = () => {
                   {selectedOrder.pershkrimi && (
                     <div className="mt-3">
                       <strong>Përshkrimi:</strong>
-                      <p className="mt-1 text-muted">{selectedOrder.pershkrimi}</p>
+                      <p className="mt-2 text-muted">{selectedOrder.pershkrimi}</p>
                     </div>
                   )}
                 </Card.Body>
               </Card>
               
-              {/* Financial Information */}
+              {/* Payment Information */}
               <Card className="mb-3">
                 <Card.Header className="bg-light">
                   <h6 className="mb-0">
-                    <CurrencyEuro className="me-2" />
-                    Informacionet Financiare
+                    <BarChart className="me-2" />
+                    Informacionet e Pagesës
                   </h6>
                 </Card.Header>
                 <Card.Body>
                   <Row>
-                    <Col md={4}>
+                    <Col md={6}>
                       <div className="detail-item mb-2">
-                        <strong>Çmimi Total:</strong>
-                        <div className="text-primary h5 mb-0">{selectedOrder.cmimiTotal}€</div>
+                        <strong>Çmimi Total:</strong> €{parseFloat(selectedOrder.cmimiTotal).toFixed(2)}
+                      </div>
+                      <div className="detail-item mb-2">
+                        <strong>Kaparja:</strong> €{parseFloat(selectedOrder.kaparja || 0).toFixed(2)}
+                      </div>
+                      <div className="detail-item mb-2">
+                        <strong>Mbetet për Paguar:</strong> 
+                        <span className="text-danger ms-2">
+                          €{(parseFloat(selectedOrder.cmimiTotal) - parseFloat(selectedOrder.kaparja || 0)).toFixed(2)}
+                        </span>
                       </div>
                     </Col>
-                    <Col md={4}>
-                      <div className="detail-item mb-2">
-                        <strong>Kaparja:</strong>
-                        <div className="text-success h5 mb-0">{selectedOrder.kaparja}€</div>
-                      </div>
-                    </Col>
-                    <Col md={4}>
-                      <div className="detail-item mb-2">
-                        <strong>Pagesa e Mbetur:</strong>
-                        <div className="text-warning h5 mb-0">{(selectedOrder.cmimiTotal - selectedOrder.kaparja).toFixed(2)}€</div>
-                      </div>
-                    </Col>
-                  </Row>
-                  <Row>
                     <Col md={6}>
                       <div className="detail-item mb-2">
                         <strong>Mënyra e Pagesës:</strong> {selectedOrder.menyraPageses}
@@ -956,28 +1154,26 @@ const CapacityManagement = () => {
                         </Col>
                       )}
                     </Row>
+                    
+                    {/* Final dimensions */}
+                    {selectedOrder.gjatesia && selectedOrder.gjeresia && selectedOrder.profiliLarte && selectedOrder.profiliPoshtem && (
+                      <Row className="mt-3 pt-3 border-top">
+                        <Col>
+                          <div className="text-center">
+                            <strong className="text-success">Dimensionet Finale:</strong>
+                            <div className="h5 text-success mt-2">
+                              {(parseFloat(selectedOrder.gjatesia) - parseFloat(selectedOrder.profiliLarte)).toFixed(1)} cm × {(parseFloat(selectedOrder.gjeresia) - parseFloat(selectedOrder.profiliPoshtem)).toFixed(1)} cm
+                            </div>
+                          </div>
+                        </Col>
+                      </Row>
+                    )}
                   </Card.Body>
                 </Card>
               )}
             </div>
           )}
         </Modal.Body>
-        <Modal.Footer className="modern-modal-footer">
-          <Button variant="outline-secondary" onClick={() => setShowOrderDetailsModal(false)}>
-            Mbyll
-          </Button>
-          <Button 
-            variant="primary" 
-            onClick={() => {
-              setShowOrderDetailsModal(false);
-              // Navigate to edit order - you might want to add this functionality
-              console.log('Navigate to edit order:', selectedOrder?.id);
-            }}
-          >
-            <Pencil className="me-2" size={16} />
-            Edito Porosinë
-          </Button>
-        </Modal.Footer>
       </Modal>
     </Container>
   );

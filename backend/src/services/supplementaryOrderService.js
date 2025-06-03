@@ -49,7 +49,7 @@ const supplementaryOrderService = {
             const totalAmount = parseFloat(cmimiTotal);
             const pagesaMbetur = totalAmount - kaparjaAmount;
 
-            // Determine status based on payment
+            // Determine status based on payment - for backward compatibility only
             let statusi = 'në proces';
             if (isPaymentDone || pagesaMbetur <= 0) {
                 statusi = 'e përfunduar';
@@ -71,7 +71,8 @@ const supplementaryOrderService = {
                 pagesaMbetur,
                 menyraPageses,
                 isPaymentDone: isPaymentDone || false,
-                statusi
+                statusi, // Keep for backward compatibility
+                statusiProduktit: 'në proces' // New field - product starts as 'në proces'
             }, { transaction: t });
 
             return supplementaryOrder;
@@ -127,7 +128,7 @@ const supplementaryOrderService = {
                 updateData.pagesaMbetur = pagesaMbetur;
             }
 
-            // Update status based on payment
+            // Update status based on payment - for backward compatibility only
             if (updateData.isPaymentDone !== undefined || updateData.cmimiTotal !== undefined || updateData.kaparja !== undefined) {
                 const isPaid = updateData.isPaymentDone !== undefined ? updateData.isPaymentDone : supplementaryOrder.isPaymentDone;
                 if (isPaid || pagesaMbetur <= 0) {
@@ -138,6 +139,12 @@ const supplementaryOrderService = {
                     statusi = 'në proces';
                 }
                 updateData.statusi = statusi;
+            }
+
+            // Don't automatically change product status unless explicitly requested
+            if (updateData.statusiProduktit === undefined) {
+                // Keep existing product status
+                updateData.statusiProduktit = supplementaryOrder.statusiProduktit;
             }
 
             await supplementaryOrder.update(updateData, { transaction: t });
@@ -159,16 +166,33 @@ const supplementaryOrderService = {
                 throw new Error('Porosia shtesë nuk u gjet!');
             }
 
-            let statusi = 'në proces';
-            if (isPaymentDone || supplementaryOrder.pagesaMbetur <= 0) {
-                statusi = 'e përfunduar';
-            } else if (supplementaryOrder.pagesaMbetur > 0) {
-                statusi = 'borxh';
+            // Keep the status as the actual product status, regardless of payment
+            await supplementaryOrder.update({
+                isPaymentDone,
+                statusi: supplementaryOrder.statusiProduktit  // Always use product status
+            }, { transaction: t });
+
+            return supplementaryOrder;
+        });
+    },
+
+    /**
+     * Update product status of a supplementary order
+     * @param {number} id - Supplementary order ID
+     * @param {string} statusiProduktit - Product status ('në proces' or 'e përfunduar')
+     * @returns {Object} - Updated supplementary order
+     */
+    updateSupplementaryOrderProductStatus: async (id, statusiProduktit) => {
+        return await sequelize.transaction(async (t) => {
+            const supplementaryOrder = await SupplementaryOrder.findByPk(id, { transaction: t });
+            
+            if (!supplementaryOrder) {
+                throw new Error('Porosia shtesë nuk u gjet!');
             }
 
             await supplementaryOrder.update({
-                isPaymentDone,
-                statusi
+                statusiProduktit,
+                statusi: statusiProduktit  // Always keep statusi equal to statusiProduktit
             }, { transaction: t });
 
             return supplementaryOrder;
@@ -214,7 +238,48 @@ const supplementaryOrderService = {
         }
 
         return supplementaryOrder;
-    }
+    },
+
+    // New function to handle partial payments for supplementary orders
+    addPartialPaymentToSupplementaryOrder: async (id, paymentAmount, paymentReceiver = null) => {
+        return await sequelize.transaction(async (t) => {
+            const supplementaryOrder = await SupplementaryOrder.findByPk(id, { transaction: t });
+            
+            if (!supplementaryOrder) {
+                throw new Error('Porosia shtesë nuk u gjet!');
+            }
+
+            // Validate payment amount
+            const currentTotal = parseFloat(supplementaryOrder.cmimiTotal);
+            const currentPaid = parseFloat(supplementaryOrder.kaparja);
+            const remainingDebt = currentTotal - currentPaid;
+            const newPaymentAmount = parseFloat(paymentAmount);
+
+            if (isNaN(newPaymentAmount) || newPaymentAmount <= 0) {
+                throw new Error('Shuma e pagesës duhet të jetë një numër pozitiv!');
+            }
+
+            if (newPaymentAmount > remainingDebt) {
+                throw new Error(`Shuma e pagesës (€${newPaymentAmount.toFixed(2)}) nuk mund të jetë më e madhe se borxhi i mbetur (€${remainingDebt.toFixed(2)})!`);
+            }
+
+            // Calculate new totals
+            const newTotalPaid = currentPaid + newPaymentAmount;
+            const newRemainingDebt = currentTotal - newTotalPaid;
+            const isFullyPaid = newRemainingDebt <= 0.01; // Allow for small rounding errors
+
+            // Update supplementary order record
+            await supplementaryOrder.update({
+                kaparja: newTotalPaid,
+                pagesaMbetur: newRemainingDebt,
+                isPaymentDone: isFullyPaid,
+                kaparaReceiver: paymentReceiver || supplementaryOrder.kaparaReceiver,
+                statusi: supplementaryOrder.statusiProduktit  // Always use product status
+            }, { transaction: t });
+
+            return supplementaryOrder;
+        });
+    },
 };
 
 module.exports = supplementaryOrderService; 

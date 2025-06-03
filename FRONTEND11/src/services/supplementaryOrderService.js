@@ -81,6 +81,29 @@ export const updateSupplementaryOrderPaymentStatus = async (id, isPaymentDone) =
 };
 
 /**
+ * Add partial payment to supplementary order
+ * @param {number} id - Supplementary order ID
+ * @param {number} paymentAmount - Amount to pay
+ * @param {string} paymentReceiver - Person who received the payment
+ * @returns {Promise} - Promise with updated supplementary order data
+ */
+export const addPartialPaymentToSupplementaryOrder = async (id, paymentAmount, paymentReceiver) => {
+  try {
+    const response = await api.post(`/supplementary-orders/${id}/partial-payment`, { 
+      paymentAmount: parseFloat(paymentAmount),
+      paymentReceiver 
+    });
+    return {
+      supplementaryOrder: response.data.data,
+      message: response.data.message
+    };
+  } catch (error) {
+    console.error(`Error adding partial payment for supplementary order ${id}:`, error);
+    throw new Error(error.response?.data?.message || `Gabim gjatë regjistrimit të pagesës për porosinë shtesë ${id}`);
+  }
+};
+
+/**
  * Delete supplementary order
  * @param {number} id - Supplementary order ID
  * @returns {Promise} - Promise with success message

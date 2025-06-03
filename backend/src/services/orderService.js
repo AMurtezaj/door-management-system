@@ -31,6 +31,7 @@ const orderService = {
             const isPaid = orderData.isPaymentDone === true;
             const pagesaMbeturCalculated = parseFloat(orderData.cmimiTotal) - parseFloat(orderData.kaparja || 0);
             
+            // For backward compatibility, set old statusi field based on payment
             let statusi = 'në proces';
             let debtType = 'none';
             
@@ -60,7 +61,8 @@ const orderService = {
                 sender: orderData.sender,
                 installer: orderData.installer,
                 dita: orderData.dita,
-                statusi: statusi,
+                statusi: statusi, // Keep for backward compatibility
+                statusiProduktit: orderData.statusiProduktit || 'në proces', // New field for product status
                 eshtePrintuar: orderData.eshtePrintuar,
                 kaVule: orderData.kaVule,
                 statusiMatjes: orderData.statusiMatjes || 'e pamatur',
@@ -144,7 +146,8 @@ const orderService = {
                         sender: orderData.sender !== undefined ? orderData.sender : orderDetails.sender,
                         installer: orderData.installer !== undefined ? orderData.installer : orderDetails.installer,
                         dita: orderData.dita !== undefined ? orderData.dita : orderDetails.dita,
-                        statusi: orderData.statusi !== undefined ? orderData.statusi : statusi,
+                        statusi: orderData.statusi !== undefined ? orderData.statusi : statusi, // Keep for backward compatibility
+                        statusiProduktit: orderData.statusiProduktit !== undefined ? orderData.statusiProduktit : orderDetails.statusiProduktit, // Don't change product status unless explicitly set
                         eshtePrintuar: orderData.eshtePrintuar !== undefined ? orderData.eshtePrintuar : orderDetails.eshtePrintuar,
                         kaVule: orderData.kaVule !== undefined ? orderData.kaVule : orderDetails.kaVule,
                         statusiMatjes: orderData.statusiMatjes !== undefined ? orderData.statusiMatjes : orderDetails.statusiMatjes,
@@ -171,16 +174,10 @@ const orderService = {
             }
 
             const pagesaMbeturCalculated = parseFloat(payment.cmimiTotal) - parseFloat(payment.kaparja);
-            
-            let statusi = 'në proces';
             let debtType = 'none';
             
             if (!isPaymentDone && pagesaMbeturCalculated > 0) {
-                statusi = 'borxh';
                 debtType = payment.menyraPageses;
-            } else if (isPaymentDone || pagesaMbeturCalculated <= 0) {
-                statusi = 'e përfunduar';
-                debtType = 'none';
             }
 
             await payment.update({
@@ -188,13 +185,79 @@ const orderService = {
                 debtType
             }, { transaction: t });
 
-            // Update order details status
+            // Update order details - do NOT change the order status based on payment
+            // The order status should purely reflect the product status
+            const orderDetails = await OrderDetails.findOne({ where: { orderId }, transaction: t });
+            if (orderDetails) {
+                // Keep the status as the actual product status, regardless of payment
+                await orderDetails.update({
+                    statusi: orderDetails.statusiProduktit  // Always use product status
+                }, { transaction: t });
+            }
+
+            return await getCompleteOrderById(orderId);
+        });
+    },
+
+    // New function to handle partial payments
+    addPartialPayment: async (orderId, paymentAmount, paymentReceiver = null) => {
+        return await sequelize.transaction(async (t) => {
+            const payment = await Payment.findOne({ where: { orderId }, transaction: t });
+            if (!payment) {
+                throw new Error('Payment not found');
+            }
+
+            // Validate payment amount
+            const currentTotal = parseFloat(payment.cmimiTotal);
+            const currentPaid = parseFloat(payment.kaparja);
+            const remainingDebt = currentTotal - currentPaid;
+            const newPaymentAmount = parseFloat(paymentAmount);
+
+            if (isNaN(newPaymentAmount) || newPaymentAmount <= 0) {
+                throw new Error('Shuma e pagesës duhet të jetë një numër pozitiv!');
+            }
+
+            if (newPaymentAmount > remainingDebt) {
+                throw new Error(`Shuma e pagesës (€${newPaymentAmount.toFixed(2)}) nuk mund të jetë më e madhe se borxhi i mbetur (€${remainingDebt.toFixed(2)})!`);
+            }
+
+            // Calculate new totals
+            const newTotalPaid = currentPaid + newPaymentAmount;
+            const newRemainingDebt = currentTotal - newTotalPaid;
+            const isFullyPaid = newRemainingDebt <= 0.01; // Allow for small rounding errors
+
+            // Update payment record
+            await payment.update({
+                kaparja: newTotalPaid,
+                isPaymentDone: isFullyPaid,
+                debtType: isFullyPaid ? 'none' : payment.menyraPageses,
+                kaparaReceiver: paymentReceiver || payment.kaparaReceiver // Update receiver if provided
+            }, { transaction: t });
+
+            // Order status remains unchanged (purely reflects product status)
             const orderDetails = await OrderDetails.findOne({ where: { orderId }, transaction: t });
             if (orderDetails) {
                 await orderDetails.update({
-                    statusi
+                    statusi: orderDetails.statusiProduktit  // Always use product status
                 }, { transaction: t });
             }
+
+            return await getCompleteOrderById(orderId);
+        });
+    },
+
+    // New function to update product status separately
+    updateProductStatus: async (orderId, statusiProduktit) => {
+        return await sequelize.transaction(async (t) => {
+            const orderDetails = await OrderDetails.findOne({ where: { orderId }, transaction: t });
+            if (!orderDetails) {
+                throw new Error('Order details not found');
+            }
+
+            await orderDetails.update({
+                statusiProduktit,
+                statusi: statusiProduktit  // Always keep statusi equal to statusiProduktit
+            }, { transaction: t });
 
             return await getCompleteOrderById(orderId);
         });

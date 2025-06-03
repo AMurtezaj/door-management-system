@@ -36,6 +36,12 @@ router.put('/:id', auth, orderController.updateOrder);
 // Update payment status
 router.patch('/:id/payment-status', auth, orderController.updatePaymentStatus);
 
+// Add partial payment
+router.post('/:id/partial-payment', auth, orderController.addPartialPayment);
+
+// Update product status
+router.patch('/:id/product-status', auth, orderController.updateProductStatus);
+
 // Delete order (admin only)
 router.delete('/:id', auth, isAdmin, orderController.deleteOrder);
 
