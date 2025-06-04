@@ -11,6 +11,7 @@ import OrderForm from './components/orders/OrderForm';
 import OrderEdit from './components/orders/OrderEdit';
 import CapacityManagement from './components/orders/CapacityManagement';
 import AdditionalOrdersPage from './components/orders/AdditionalOrdersPage';
+import UnmeasuredOrdersList from './components/orders/UnmeasuredOrdersList';
 import DebtManagementPage from './pages/DebtManagementPage';
 import MeasurementStatusPage from './pages/MeasurementStatusPage';
 import QRVerification from './components/verification/QRVerification';
@@ -42,6 +43,7 @@ const App = () => {
           <Route path="/orders/edit/:id" element={<OrderEdit />} />
           <Route path="/orders/additional" element={<AdditionalOrdersPage />} />
           <Route path="/orders/capacity" element={<CapacityManagement />} />
+          <Route path="/orders/unmeasured" element={<UnmeasuredOrdersList />} />
           
           {/* Specialized Order Features */}
           <Route path="/debt-management" element={<DebtManagementPage />} />

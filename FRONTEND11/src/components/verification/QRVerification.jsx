@@ -116,7 +116,6 @@ const QRVerification = () => {
     switch (status?.toLowerCase()) {
       case 'e përfunduar': return 'success';
       case 'në proces': return 'warning';
-      case 'borxh': return 'danger';
       default: return 'secondary';
     }
   };

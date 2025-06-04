@@ -39,6 +39,9 @@ router.patch('/:id/payment-status', auth, orderController.updatePaymentStatus);
 // Add partial payment
 router.post('/:id/partial-payment', auth, orderController.addPartialPayment);
 
+// Cancel partial payment
+router.post('/:id/cancel-payment', auth, orderController.cancelPartialPayment);
+
 // Update product status
 router.patch('/:id/product-status', auth, orderController.updateProductStatus);
 

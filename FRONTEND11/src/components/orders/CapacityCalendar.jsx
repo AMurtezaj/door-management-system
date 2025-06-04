@@ -427,8 +427,6 @@ const CapacityCalendar = () => {
         return <Badge bg="success">E Përfunduar</Badge>;
       case 'në proces':
         return <Badge bg="warning">Në Proces</Badge>;
-      case 'borxh':
-        return <Badge bg="danger">Borxh</Badge>;
       default:
         return <Badge bg="secondary">{order.statusi}</Badge>;
     }

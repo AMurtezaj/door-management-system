@@ -1,4 +1,5 @@
 const { sequelize, Order, Customer, SupplementaryOrder } = require('../models');
+const NotificationService = require('./notificationService');
 
 const supplementaryOrderService = {
     /**
@@ -280,6 +281,87 @@ const supplementaryOrderService = {
             return supplementaryOrder;
         });
     },
+
+    // Cancel partial payment for supplementary order
+    cancelPartialPayment: async (supplementaryOrderId, cancellationAmount) => {
+        const transaction = await sequelize.transaction();
+        
+        try {
+            // Get the supplementary order with payment info
+            const supplementaryOrder = await SupplementaryOrder.findByPk(supplementaryOrderId, {
+                transaction
+            });
+
+            if (!supplementaryOrder) {
+                throw new Error('Porosia shtesë nuk u gjet');
+            }
+
+            const currentKaparja = parseFloat(supplementaryOrder.kaparja || 0);
+            const totalAmount = parseFloat(supplementaryOrder.cmimiTotal || 0);
+            const amountToCancel = parseFloat(cancellationAmount);
+
+            // Validation
+            if (amountToCancel <= 0) {
+                throw new Error('Shuma e anulimit duhet të jetë pozitive');
+            }
+
+            if (amountToCancel > currentKaparja) {
+                throw new Error(`Nuk mund të anuloni më shumë se sa është paguar (€${currentKaparja.toFixed(2)})`);
+            }
+
+            // Calculate new amounts
+            const newKaparja = currentKaparja - amountToCancel;
+            const remainingDebt = totalAmount - newKaparja;
+            const isPaymentDone = remainingDebt <= 0.01; // Consider paid if debt is negligible
+
+            // Update supplementary order
+            await supplementaryOrder.update({
+                kaparja: newKaparja.toFixed(2),
+                isPaymentDone: isPaymentDone
+            }, { transaction });
+
+            // Create notification for payment cancellation
+            await NotificationService.createNotification({
+                type: 'supplementary_payment_cancelled',
+                title: 'Pagesa e Porosisë Shtesë u Anulua',
+                message: `Pagesa prej €${amountToCancel.toFixed(2)} u anulua për porosinë shtesë #${supplementaryOrderId}. Borxh i ri: €${remainingDebt.toFixed(2)}`,
+                orderId: supplementaryOrder.parentOrderId,
+                metadata: {
+                    supplementaryOrderId: supplementaryOrderId,
+                    cancelledAmount: amountToCancel,
+                    newKaparja: newKaparja,
+                    newDebt: remainingDebt,
+                    customerName: `${supplementaryOrder.emriKlientit} ${supplementaryOrder.mbiemriKlientit}`
+                }
+            }, transaction);
+
+            await transaction.commit();
+
+            // Return updated supplementary order
+            const updatedOrder = await SupplementaryOrder.findByPk(supplementaryOrderId);
+
+            return {
+                success: true,
+                message: `Pagesa prej €${amountToCancel.toFixed(2)} u anulua me sukses. Borxh i ri: €${remainingDebt.toFixed(2)}`,
+                order: updatedOrder,
+                cancelledAmount: amountToCancel,
+                newKaparja: newKaparja,
+                newDebt: remainingDebt
+            };
+
+        } catch (error) {
+            await transaction.rollback();
+            console.error('Error cancelling supplementary order partial payment:', error);
+            throw error;
+        }
+    }
 };
 
-module.exports = supplementaryOrderService; 
+module.exports = {
+    createSupplementaryOrder: supplementaryOrderService.createSupplementaryOrder,
+    getSupplementaryOrdersByParentId: supplementaryOrderService.getSupplementaryOrdersByParentId,
+    updateSupplementaryOrderPaymentStatus: supplementaryOrderService.updateSupplementaryOrderPaymentStatus,
+    deleteSupplementaryOrder: supplementaryOrderService.deleteSupplementaryOrder,
+    addPartialPayment: supplementaryOrderService.addPartialPaymentToSupplementaryOrder,
+    cancelPartialPayment: supplementaryOrderService.cancelPartialPayment
+}; 

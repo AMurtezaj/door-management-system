@@ -21,6 +21,9 @@ router.patch('/:id/payment-status', auth, supplementaryOrderController.updateSup
 // Add partial payment to supplementary order
 router.post('/:id/partial-payment', auth, supplementaryOrderController.addPartialPaymentToSupplementaryOrder);
 
+// Cancel partial payment for supplementary order
+router.post('/:id/cancel-payment', auth, supplementaryOrderController.cancelPartialPayment);
+
 // Update product status
 router.patch('/:id/product-status', auth, supplementaryOrderController.updateSupplementaryOrderProductStatus);
 

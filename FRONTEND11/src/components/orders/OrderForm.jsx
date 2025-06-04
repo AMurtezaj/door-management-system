@@ -54,7 +54,6 @@ const OrderForm = () => {
     tipiPorosise: 'derë garazhi',
     pershkrimi: '',
     isPaymentDone: false,
-    kaVule: false,
     eshtePrintuar: false,
     gjatesia: '',
     gjeresia: '',
@@ -791,19 +790,6 @@ const OrderForm = () => {
                     label="💰 Pagesa e Përfunduar"
                     name="isPaymentDone"
                     checked={formData.isPaymentDone}
-                    onChange={handleChange}
-                    className="custom-checkbox"
-                  />
-                </Form.Group>
-              </Col>
-              
-              <Col md={4}>
-                <Form.Group className="form-group mb-3">
-                  <Form.Check
-                    type="checkbox"
-                    label="🔖 Ka Vulë"
-                    name="kaVule"
-                    checked={formData.kaVule}
                     onChange={handleChange}
                     className="custom-checkbox"
                   />

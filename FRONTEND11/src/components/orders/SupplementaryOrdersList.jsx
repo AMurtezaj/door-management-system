@@ -52,8 +52,7 @@ const SupplementaryOrdersList = ({ parentOrderId, onUpdate }) => {
         orders.map(order => 
           order.id === id ? { 
             ...order, 
-            isPaymentDone: isPaid,
-            statusi: isPaid ? 'e përfunduar' : 'borxh'
+            isPaymentDone: isPaid
           } : order
         )
       );
@@ -157,8 +156,6 @@ const SupplementaryOrdersList = ({ parentOrderId, onUpdate }) => {
         return <Badge bg="warning">Në Proces</Badge>;
       case 'e përfunduar':
         return <Badge bg="success">E Përfunduar</Badge>;
-      case 'borxh':
-        return <Badge bg="danger">Borxh</Badge>;
       default:
         return <Badge bg="secondary">{status}</Badge>;
     }
@@ -201,7 +198,7 @@ const SupplementaryOrdersList = ({ parentOrderId, onUpdate }) => {
           <div className="text-end">
             <small className="text-muted">
               Total: {calculateTotal().toFixed(2)} € | 
-              Borxh: {calculateTotalDebt().toFixed(2)} €
+              Papaguar: {calculateTotalDebt().toFixed(2)} €
             </small>
           </div>
         )}

@@ -39,7 +39,6 @@ const formatOrderResponse = (order) => {
     formattedOrder.dita = order.OrderDetail.dita;
     formattedOrder.statusi = order.OrderDetail.statusi;
     formattedOrder.eshtePrintuar = order.OrderDetail.eshtePrintuar;
-    formattedOrder.kaVule = order.OrderDetail.kaVule;
     formattedOrder.statusiMatjes = order.OrderDetail.statusiMatjes;
     // Add dimension fields
     formattedOrder.gjatesia = order.OrderDetail.gjatesia;
@@ -547,5 +546,17 @@ export const bulkRescheduleOrders = async (orderIds, newDate, reason = '') => {
   } catch (error) {
     console.error('Error bulk rescheduling orders:', error);
     throw new Error(error.response?.data?.message || 'Gabim gjatë riplanifikimit në sasi të porosive');
+  }
+};
+
+export const cancelPartialPayment = async (orderId, cancellationAmount) => {
+  try {
+    const response = await api.post(`/orders/${orderId}/cancel-payment`, { 
+      cancellationAmount 
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error cancelling partial payment for order ${orderId}:`, error);
+    throw new Error(error.response?.data?.message || 'Ka ndodhur një gabim gjatë anulimit të pagesës');
   }
 }; 

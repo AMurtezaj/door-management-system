@@ -116,4 +116,16 @@ export const deleteSupplementaryOrder = async (id) => {
     console.error(`Error deleting supplementary order ${id}:`, error);
     throw new Error(error.response?.data?.message || `Gabim gjatë fshirjes së porosisë shtesë ${id}`);
   }
+};
+
+export const cancelPartialPaymentFromSupplementaryOrder = async (id, cancellationAmount) => {
+  try {
+    const response = await api.post(`/supplementary-orders/${id}/cancel-payment`, { 
+      cancellationAmount 
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Error cancelling partial payment for supplementary order ${id}:`, error);
+    throw new Error(error.response?.data?.message || 'Ka ndodhur një gabim gjatë anulimit të pagesës');
+  }
 }; 

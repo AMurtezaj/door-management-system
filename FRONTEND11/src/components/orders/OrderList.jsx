@@ -3,13 +3,14 @@ import { Container, Table, Badge, Button, Row, Col, Form, Alert, Spinner, Card }
 import { useNavigate } from 'react-router-dom';
 import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { sq } from 'date-fns/locale';
-import { Calendar3, ArrowRepeat } from 'react-bootstrap-icons';
-import { getAllOrders, updatePaymentStatus, deleteOrder, addPartialPayment } from '../../services/orderService';
+import { Calendar3, ArrowRepeat, InfoCircle, List } from 'react-bootstrap-icons';
+import { getAllOrders, updatePaymentStatus, deleteOrder, addPartialPayment, cancelPartialPayment } from '../../services/orderService';
 import { useAuth } from '../../context/AuthContext';
 import PrintInvoiceModal from './PrintInvoiceModal';
 import SupplementaryOrderForm from './SupplementaryOrderForm';
 import DimensionManager from './DimensionManager';
 import PartialPaymentModal from '../payments/PartialPaymentModal';
+import PaymentCancellationModal from '../payments/PaymentCancellationModal';
 
 const OrderList = () => {
   const navigate = useNavigate();
@@ -40,6 +41,10 @@ const OrderList = () => {
   const [showPartialPaymentModal, setShowPartialPaymentModal] = useState(false);
   const [selectedOrderForPayment, setSelectedOrderForPayment] = useState(null);
   
+  // Payment cancellation state
+  const [showPaymentCancellationModal, setShowPaymentCancellationModal] = useState(false);
+  const [selectedOrderForCancellation, setSelectedOrderForCancellation] = useState(null);
+  
   // Fetch orders on mount and when authentication changes
   useEffect(() => {
     if (isAuthenticated) {
@@ -67,6 +72,9 @@ const OrderList = () => {
   const filterAndSortOrders = () => {
     let filtered = [...orders];
     const today = new Date();
+    
+    // FIRST: Filter out unmeasured orders (E pamatur) - they shouldn't appear in main order list
+    filtered = filtered.filter(order => order.statusiMatjes !== 'e pamatur');
     
     // Apply time filter first
     switch (timeFilter) {
@@ -133,8 +141,6 @@ const OrderList = () => {
       filtered = filtered.filter(order => order.statusi === 'në proces');
     } else if (filter === 'completed') {
       filtered = filtered.filter(order => order.statusi === 'e përfunduar');
-    } else if (filter === 'debt') {
-      filtered = filtered.filter(order => order.statusi === 'borxh');
     } else if (filter === 'unpaid') {
       filtered = filtered.filter(order => !order.isPaymentDone);
     }
@@ -249,18 +255,30 @@ const OrderList = () => {
     }
   };
 
-  const handleCancelPayment = async (order) => {
-    if (!window.confirm('Jeni të sigurtë që dëshironi të anuloni pagesën për këtë porosi?')) {
-      return;
-    }
-    
+  const handleCancelPayment = (order) => {
+    setSelectedOrderForCancellation(order);
+    setShowPaymentCancellationModal(true);
+  };
+
+  const handlePaymentCancellationSuccess = async ({ orderId, cancellationAmount, newKaparja, newDebt, isPaymentDone }) => {
     try {
-      await updatePaymentStatus(order.id, false);
-      setOrders(orders.map(o => 
-        o.id === order.id ? { ...o, isPaymentDone: false } : o
+      const result = await cancelPartialPayment(orderId, cancellationAmount);
+      
+      // Update the order in the list
+      setOrders(orders.map(order => 
+        order.id === orderId ? { 
+          ...order, 
+          kaparja: newKaparja,
+          isPaymentDone: isPaymentDone
+        } : order
       ));
+      
+      // Show success message
+      setError('');
+      alert(result.message);
+      
     } catch (err) {
-      setError('Ka ndodhur një gabim gjatë anulimit të pagesës');
+      throw err; // Let the modal handle the error display
     }
   };
 
@@ -302,8 +320,6 @@ const OrderList = () => {
         return <Badge bg="warning">Në Proces</Badge>;
       case 'e përfunduar':
         return <Badge bg="success">E Përfunduar</Badge>;
-      case 'borxh':
-        return <Badge bg="danger">Borxh</Badge>;
       default:
         return <Badge bg="secondary">{status}</Badge>;
     }
@@ -488,6 +504,33 @@ const OrderList = () => {
         </Alert>
       )}
       
+      <Alert variant="info" className="mb-4">
+        <div className="d-flex align-items-center">
+          <InfoCircle className="me-2" size={16} />
+          <div>
+            <strong>Njoftim:</strong> Porositë me status matjeje "E pamatur" janë të fshehura nga kjo listë. 
+            Ato do të shfaqen automatikisht kur statusi i matjes të ndryshohet në "E matur".
+            {orders.length !== filteredOrders.length && (
+              <div className="mt-1">
+                <small className="text-muted">
+                  {orders.length - filteredOrders.length} porosi të pamatura janë të fshehura aktualisht.
+                </small>
+              </div>
+            )}
+            <div className="mt-2">
+              <Button 
+                variant="outline-primary" 
+                size="sm"
+                onClick={() => navigate('/orders/unmeasured')}
+              >
+                <List className="me-1" size={14} />
+                Shiko Porositë e Pamatura
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Alert>
+      
       <Row className="mb-3">
         <Col md={3}>
           <Button variant="primary" onClick={() => navigate('/orders/new')}>
@@ -510,7 +553,6 @@ const OrderList = () => {
             <option value="all">Të Gjitha Statuset</option>
             <option value="inProcess">Në Proces</option>
             <option value="completed">Të Përfunduara</option>
-            <option value="debt">Borxhe</option>
             <option value="unpaid">Të Papaguara</option>
           </Form.Select>
         </Col>
@@ -611,7 +653,7 @@ const OrderList = () => {
                     </Button>
                   )}
                   
-                  {order.isPaymentDone && canManagePayments && (
+                  {parseFloat(order.kaparja || 0) > 0 && canManagePayments && (
                     <Button 
                       variant="warning" 
                       size="sm" 
@@ -703,6 +745,17 @@ const OrderList = () => {
         }}
         order={selectedOrderForPayment}
         onPaymentSuccess={handlePartialPaymentSuccess}
+      />
+      
+      {/* Payment Cancellation Modal */}
+      <PaymentCancellationModal
+        show={showPaymentCancellationModal}
+        onHide={() => {
+          setShowPaymentCancellationModal(false);
+          setSelectedOrderForCancellation(null);
+        }}
+        order={selectedOrderForCancellation}
+        onCancellationSuccess={handlePaymentCancellationSuccess}
       />
     </Container>
   );

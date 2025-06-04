@@ -171,7 +171,6 @@ async function comprehensiveSeedData() {
         statusi: ['në proces', 'e përfunduar', 'borxh'][Math.floor(Math.random() * 3)],
         statusiMatjes: Math.random() > 0.3 ? 'e matur' : 'e pamatur',
         eshtePrintuar: Math.random() > 0.6,
-        kaVule: Math.random() > 0.7,
         
         // Personnel assignments
         matesi: Math.random() > 0.2 ? measurers[Math.floor(Math.random() * measurers.length)] : null,

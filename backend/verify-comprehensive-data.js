@@ -52,7 +52,6 @@ async function verifyComprehensiveData() {
         od."dataMatjes",
         od."dita",
         od."eshtePrintuar",
-        od."kaVule",
         p."cmimiTotal",
         p."kaparja",
         p."kaparaReceiver",
@@ -108,7 +107,6 @@ async function verifyComprehensiveData() {
         console.log(`   🚀 Scheduled Date: ${order.dita}`);
       }
       console.log(`   🖨️ Printed: ${order.eshtePrintuar ? 'Yes' : 'No'}`);
-      console.log(`   🔒 Has Seal: ${order.kaVule ? 'Yes' : 'No'}`);
     });
 
     // Supplementary orders details

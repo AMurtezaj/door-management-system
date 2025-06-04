@@ -34,9 +34,9 @@ const OrderDetails = sequelize.define('OrderDetails', {
         allowNull: true
     },
     statusi: {
-        type: DataTypes.ENUM('në proces', 'e përfunduar', 'borxh'),
+        type: DataTypes.ENUM('në proces', 'e përfunduar'),
         defaultValue: 'në proces',
-        comment: 'DEPRECATED: Use statusiProduktit instead. Kept for backward compatibility.'
+        comment: 'DEPRECATED: Use statusiProduktit instead. Kept for backward compatibility. Now mirrors statusiProduktit.'
     },
     statusiProduktit: {
         type: DataTypes.ENUM('në proces', 'e përfunduar'),
@@ -44,10 +44,6 @@ const OrderDetails = sequelize.define('OrderDetails', {
         comment: 'Statusi i produktit (a është gati/dorëzuar)'
     },
     eshtePrintuar: {
-        type: DataTypes.BOOLEAN,
-        defaultValue: false
-    },
-    kaVule: {
         type: DataTypes.BOOLEAN,
         defaultValue: false
     },

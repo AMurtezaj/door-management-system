@@ -1,4 +1,5 @@
 const { sequelize, Order, Customer, Payment, OrderDetails, SupplementaryOrder } = require('../models');
+const NotificationService = require('./notificationService');
 
 const orderService = {
     createCompleteOrder: async (orderData) => {
@@ -64,7 +65,6 @@ const orderService = {
                 statusi: statusi, // Keep for backward compatibility
                 statusiProduktit: orderData.statusiProduktit || 'në proces', // New field for product status
                 eshtePrintuar: orderData.eshtePrintuar,
-                kaVule: orderData.kaVule,
                 statusiMatjes: orderData.statusiMatjes || 'e pamatur',
                 gjatesia: orderData.gjatesia,
                 gjeresia: orderData.gjeresia,
@@ -149,7 +149,6 @@ const orderService = {
                         statusi: orderData.statusi !== undefined ? orderData.statusi : statusi, // Keep for backward compatibility
                         statusiProduktit: orderData.statusiProduktit !== undefined ? orderData.statusiProduktit : orderDetails.statusiProduktit, // Don't change product status unless explicitly set
                         eshtePrintuar: orderData.eshtePrintuar !== undefined ? orderData.eshtePrintuar : orderDetails.eshtePrintuar,
-                        kaVule: orderData.kaVule !== undefined ? orderData.kaVule : orderDetails.kaVule,
                         statusiMatjes: orderData.statusiMatjes !== undefined ? orderData.statusiMatjes : orderDetails.statusiMatjes,
                         gjatesia: orderData.gjatesia !== undefined ? orderData.gjatesia : orderDetails.gjatesia,
                         gjeresia: orderData.gjeresia !== undefined ? orderData.gjeresia : orderDetails.gjeresia,
@@ -261,6 +260,90 @@ const orderService = {
 
             return await getCompleteOrderById(orderId);
         });
+    },
+
+    // Cancel partial payment (reduce kaparja by specified amount)
+    cancelPartialPayment: async (orderId, cancellationAmount) => {
+        const transaction = await sequelize.transaction();
+        
+        try {
+            // Get the order with payment info
+            const order = await Order.findByPk(orderId, {
+                include: [
+                    { model: Customer },
+                    { model: Payment },
+                    { model: OrderDetails, as: 'OrderDetail' }
+                ],
+                transaction
+            });
+
+            if (!order) {
+                throw new Error('Porosia nuk u gjet');
+            }
+
+            const currentKaparja = parseFloat(order.Payment.kaparja || 0);
+            const totalAmount = parseFloat(order.Payment.cmimiTotal || 0);
+            const amountToCancel = parseFloat(cancellationAmount);
+
+            // Validation
+            if (amountToCancel <= 0) {
+                throw new Error('Shuma e anulimit duhet të jetë pozitive');
+            }
+
+            if (amountToCancel > currentKaparja) {
+                throw new Error(`Nuk mund të anuloni më shumë se sa është paguar (€${currentKaparja.toFixed(2)})`);
+            }
+
+            // Calculate new amounts
+            const newKaparja = currentKaparja - amountToCancel;
+            const remainingDebt = totalAmount - newKaparja;
+            const isPaymentDone = remainingDebt <= 0.01; // Consider paid if debt is negligible
+
+            // Update payment record
+            await order.Payment.update({
+                kaparja: newKaparja.toFixed(2),
+                isPaymentDone: isPaymentDone
+            }, { transaction });
+
+            // Create notification for payment cancellation
+            await NotificationService.createNotification({
+                type: 'payment_cancelled',
+                title: 'Pagesa u Anulua',
+                message: `Pagesa prej €${amountToCancel.toFixed(2)} u anulua për porosinë #${orderId}. Borxh i ri: €${remainingDebt.toFixed(2)}`,
+                orderId: orderId,
+                metadata: {
+                    cancelledAmount: amountToCancel,
+                    newKaparja: newKaparja,
+                    newDebt: remainingDebt,
+                    customerName: `${order.Customer.emriKlientit} ${order.Customer.mbiemriKlientit}`
+                }
+            }, transaction);
+
+            await transaction.commit();
+
+            // Return updated order
+            const updatedOrder = await Order.findByPk(orderId, {
+                include: [
+                    { model: Customer },
+                    { model: Payment },
+                    { model: OrderDetails, as: 'OrderDetail' }
+                ]
+            });
+
+            return {
+                success: true,
+                message: `Pagesa prej €${amountToCancel.toFixed(2)} u anulua me sukses. Borxh i ri: €${remainingDebt.toFixed(2)}`,
+                order: updatedOrder,
+                cancelledAmount: amountToCancel,
+                newKaparja: newKaparja,
+                newDebt: remainingDebt
+            };
+
+        } catch (error) {
+            await transaction.rollback();
+            console.error('Error cancelling partial payment:', error);
+            throw error;
+        }
     }
 };
 
@@ -276,4 +359,16 @@ async function getCompleteOrderById(id) {
     });
 }
 
-module.exports = orderService; 
+module.exports = {
+    createOrder: orderService.createOrder,
+    getAllOrders: orderService.getAllOrders,
+    getOrderById: orderService.getOrderById,
+    updateOrder: orderService.updateOrder,
+    deleteOrder: orderService.deleteOrder,
+    updatePaymentStatus: orderService.updatePaymentStatus,
+    updateOrderStatus: orderService.updateOrderStatus,
+    getOrdersByDay: orderService.getOrdersByDay,
+    completeOrder: orderService.completeOrder,
+    addPartialPayment: orderService.addPartialPayment,
+    cancelPartialPayment: orderService.cancelPartialPayment
+}; 

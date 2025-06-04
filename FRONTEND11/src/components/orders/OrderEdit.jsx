@@ -72,7 +72,6 @@ const OrderEdit = () => {
     tipiPorosise: 'derë garazhi',
     pershkrimi: '',
     isPaymentDone: false,
-    kaVule: false,
     eshtePrintuar: false,
     statusiMatjes: 'e pamatur',
     gjatesia: '',
@@ -780,7 +779,6 @@ const OrderEdit = () => {
                   >
                     <option value="në proces">🔄 Në Proces</option>
                     <option value="e përfunduar">✅ E Përfunduar</option>
-                    <option value="borxh">💰 Borxh</option>
                   </Form.Select>
                 </Form.Group>
               </Col>
@@ -951,19 +949,6 @@ const OrderEdit = () => {
                     label="💰 Pagesa e Përfunduar"
                     name="isPaymentDone"
                     checked={formData.isPaymentDone}
-                    onChange={handleChange}
-                    className="custom-checkbox"
-                  />
-                </Form.Group>
-              </Col>
-              
-              <Col md={4}>
-                <Form.Group className="form-group mb-3">
-                  <Form.Check
-                    type="checkbox"
-                    label="🔖 Ka Vulë"
-                    name="kaVule"
-                    checked={formData.kaVule}
                     onChange={handleChange}
                     className="custom-checkbox"
                   />

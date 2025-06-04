@@ -106,7 +106,6 @@ const OrderInvoice = forwardRef(({ order, user }, ref) => {
       
       // Status Flags
       statusFlags: {
-        hasStamp: order.kaVule ? 'Po' : 'Jo',
         isPrinted: order.eshtePrintuar ? 'Po' : 'Jo',
         paymentDone: order.isPaymentDone ? 'Po' : 'Jo'
       },

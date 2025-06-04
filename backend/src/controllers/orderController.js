@@ -232,7 +232,7 @@ const orderController = {
                 include: [
                     { model: Customer },
                     { model: Payment, where: { debtType: 'kesh', isPaymentDone: false } },
-                    { model: OrderDetails, as: 'OrderDetail', where: { statusi: 'borxh' } },
+                    { model: OrderDetails, as: 'OrderDetail' },
                     { model: SupplementaryOrder }
                 ],
                 order: [['createdAt', 'DESC']]
@@ -251,7 +251,7 @@ const orderController = {
                 include: [
                     { model: Customer },
                     { model: Payment, where: { debtType: 'banke', isPaymentDone: false } },
-                    { model: OrderDetails, as: 'OrderDetail', where: { statusi: 'borxh' } },
+                    { model: OrderDetails, as: 'OrderDetail' },
                     { model: SupplementaryOrder }
                 ],
                 order: [['createdAt', 'DESC']]
@@ -687,6 +687,29 @@ const orderController = {
         } catch (error) {
             console.error('Error fetching supplementary bank debt orders:', error);
             res.status(400).json({ message: 'Diçka shkoi keq!' });
+        }
+    },
+
+    // Cancel partial payment
+    cancelPartialPayment: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { cancellationAmount } = req.body;
+
+            if (!cancellationAmount || cancellationAmount <= 0) {
+                return res.status(400).json({ 
+                    message: 'Shuma e anulimit është e detyrueshme dhe duhet të jetë pozitive' 
+                });
+            }
+
+            const result = await orderService.cancelPartialPayment(id, cancellationAmount);
+            
+            res.json(result);
+        } catch (error) {
+            console.error('Error cancelling partial payment:', error);
+            res.status(400).json({ 
+                message: error.message || 'Ka ndodhur një gabim gjatë anulimit të pagesës'
+            });
         }
     }
 };

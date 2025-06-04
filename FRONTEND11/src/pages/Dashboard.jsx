@@ -74,7 +74,9 @@ const Dashboard = () => {
     try {
       setOrdersLoading(true);
       const data = await getAllOrders();
-      setOrders(data.slice(0, 5)); // Get only the 5 most recent
+      // Filter out unmeasured orders from dashboard
+      const measuredOrders = data.filter(order => order.statusiMatjes !== 'e pamatur');
+      setOrders(measuredOrders.slice(0, 5)); // Get only the 5 most recent measured orders
       setOrdersLoading(false);
     } catch (error) {
       console.error('Error fetching orders:', error);
@@ -118,14 +120,12 @@ const Dashboard = () => {
   };
   
   // Get order status badge
-  const getOrderStatusBadge = (status) => {
+  const getStatusBadge = (status) => {
     switch (status) {
       case 'në proces':
         return <Badge bg="warning">Në Proces</Badge>;
       case 'e përfunduar':
         return <Badge bg="success">E Përfunduar</Badge>;
-      case 'borxh':
-        return <Badge bg="danger">Borxh</Badge>;
       default:
         return <Badge bg="secondary">{status}</Badge>;
     }
@@ -261,7 +261,7 @@ const Dashboard = () => {
                           </td>
                           <td>{order.tipiPorosise}</td>
                           <td>{parseFloat(order.cmimiTotal).toFixed(2)} €</td>
-                          <td>{getOrderStatusBadge(order.statusi)}</td>
+                          <td>{getStatusBadge(order.statusi)}</td>
                         </tr>
                       ))}
                     </tbody>

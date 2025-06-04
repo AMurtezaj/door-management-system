@@ -153,8 +153,6 @@ const AdditionalOrdersPage = () => {
       filtered = filtered.filter(order => order.statusi === 'në proces');
     } else if (filter === 'completed') {
       filtered = filtered.filter(order => order.statusi === 'e përfunduar');
-    } else if (filter === 'debt') {
-      filtered = filtered.filter(order => order.statusi === 'borxh');
     } else if (filter === 'unpaid') {
       filtered = filtered.filter(order => !order.isPaymentDone);
     }
@@ -240,8 +238,7 @@ const AdditionalOrdersPage = () => {
         orders.map(order => 
           order.id === id ? { 
             ...order, 
-            isPaymentDone: isPaid,
-            statusi: isPaid ? 'e përfunduar' : 'borxh'
+            isPaymentDone: isPaid
           } : order
         )
       );
@@ -280,8 +277,6 @@ const AdditionalOrdersPage = () => {
         return <Badge bg="warning">Në Proces</Badge>;
       case 'e përfunduar':
         return <Badge bg="success">E Përfunduar</Badge>;
-      case 'borxh':
-        return <Badge bg="danger">Borxh</Badge>;
       default:
         return <Badge bg="secondary">{status}</Badge>;
     }
@@ -448,7 +443,6 @@ const AdditionalOrdersPage = () => {
             <option value="all">Të Gjitha Statuset</option>
             <option value="inProcess">Në Proces</option>
             <option value="completed">Të Përfunduara</option>
-            <option value="debt">Borxhe</option>
             <option value="unpaid">Të Papaguara</option>
           </Form.Select>
         </Col>

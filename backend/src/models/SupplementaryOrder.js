@@ -68,9 +68,9 @@ const SupplementaryOrder = sequelize.define('SupplementaryOrder', {
         comment: 'A është përfunduar pagesa për produktin shtesë'
     },
     statusi: {
-        type: DataTypes.ENUM('në proces', 'e përfunduar', 'borxh'),
+        type: DataTypes.ENUM('në proces', 'e përfunduar'),
         defaultValue: 'në proces',
-        comment: 'DEPRECATED: Use statusiProduktit instead. Kept for backward compatibility.'
+        comment: 'DEPRECATED: Use statusiProduktit instead. Kept for backward compatibility. Now mirrors statusiProduktit.'
     },
     statusiProduktit: {
         type: DataTypes.ENUM('në proces', 'e përfunduar'),

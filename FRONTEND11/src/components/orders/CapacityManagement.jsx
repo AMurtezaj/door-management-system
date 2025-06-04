@@ -312,8 +312,6 @@ const CapacityManagement = () => {
         return <Badge bg="success">E Përfunduar</Badge>;
       case 'në proces':
         return <Badge bg="warning">Në Proces</Badge>;
-      case 'borxh':
-        return <Badge bg="danger">Borxh</Badge>;
       default:
         return <Badge bg="secondary">{status}</Badge>;
     }
@@ -422,7 +420,7 @@ const CapacityManagement = () => {
     for (let i = 0; i < availableSlots; i++) {
       squares.push(
         <OverlayTrigger
-          key={`${type}-available-${i}`}
+            key={`${type}-available-${i}`}
           placement="top"
           overlay={
             <Tooltip>
@@ -635,15 +633,15 @@ const CapacityManagement = () => {
           <strong>Sukses!</strong> {success}
         </Alert>
       )}
-      
-      {!canManageCapacities && (
+          
+          {!canManageCapacities && (
         <Alert variant="info" className="modern-alert alert-info mb-4">
-          <strong>Njoftim:</strong> Si menaxher, ju mund të shikoni kapacitetet dhe porositë, por nuk mund të bëni ndryshime në kapacitete. Vetëm administratori mund të menaxhojë kapacitetet ditore.
-        </Alert>
-      )}
-
+              <strong>Njoftim:</strong> Si menaxher, ju mund të shikoni kapacitetet dhe porositë, por nuk mund të bëni ndryshime në kapacitete. Vetëm administratori mund të menaxhojë kapacitetet ditore.
+            </Alert>
+          )}
+          
       {/* Capacity Form */}
-      {canManageCapacities && (
+          {canManageCapacities && (
         <Card className="capacity-form-card mb-4">
           <Card.Header className="capacity-form-header">
             <div className="d-flex align-items-center">
@@ -652,71 +650,71 @@ const CapacityManagement = () => {
             </div>
           </Card.Header>
           <Card.Body className="capacity-form-body">
-            <Form onSubmit={handleSubmit}>
-              <Row>
-                <Col md={4}>
+              <Form onSubmit={handleSubmit}>
+                <Row>
+                  <Col md={4}>
                   <div className="modern-form-group">
                     <Form.Label className="modern-label">
                       <Calendar3 className="me-2" size={16} />
                       Dita <span className="text-danger">*</span>
                     </Form.Label>
-                    <Form.Control
-                      type="date"
-                      name="dita"
-                      value={formData.dita}
-                      onChange={handleChange}
+                      <Form.Control
+                        type="date"
+                        name="dita"
+                        value={formData.dita}
+                        onChange={handleChange}
                       className="modern-input"
-                      required
-                    />
+                        required
+                      />
                   </div>
-                </Col>
-                
-                <Col md={4}>
+                  </Col>
+                  
+                  <Col md={4}>
                   <div className="modern-form-group">
                     <Form.Label className="modern-label">
                       <DoorOpen className="me-2" size={16} />
                       Dyer Garazhi <span className="text-danger">*</span>
                     </Form.Label>
-                    <Form.Control
-                      type="number"
-                      name="dyerGarazhi"
-                      value={formData.dyerGarazhi}
-                      onChange={handleChange}
-                      min="0"
-                      placeholder="Vendosni numrin e dyerve të disponueshme"
+                      <Form.Control
+                        type="number"
+                        name="dyerGarazhi"
+                        value={formData.dyerGarazhi}
+                        onChange={handleChange}
+                        min="0"
+                        placeholder="Vendosni numrin e dyerve të disponueshme"
                       className="modern-input"
-                      required
-                    />
+                        required
+                      />
                   </div>
-                </Col>
-                
-                <Col md={4}>
+                  </Col>
+                  
+                  <Col md={4}>
                   <div className="modern-form-group">
                     <Form.Label className="modern-label">
                       <BarChart className="me-2" size={16} />
                       Kapgjik <span className="text-danger">*</span>
                     </Form.Label>
-                    <Form.Control
-                      type="number"
-                      name="kapake"
-                      value={formData.kapake}
-                      onChange={handleChange}
-                      min="0"
-                      placeholder="Vendosni numrin e kapgjikëve të disponueshëm"
+                      <Form.Control
+                        type="number"
+                        name="kapake"
+                        value={formData.kapake}
+                        onChange={handleChange}
+                        min="0"
+                        placeholder="Vendosni numrin e kapgjikëve të disponueshëm"
                       className="modern-input"
-                      required
-                    />
+                        required
+                      />
                   </div>
-                </Col>
-              </Row>
-              
+                  </Col>
+                </Row>
+                
               <div className="d-flex justify-content-end mt-4">
                 <Button type="submit" className="modern-btn-primary">
                   <Plus className="me-2" size={18} />
-                  Ruaj Kapacitetin
-                </Button>
-              </div>
-            </Form>
+                    Ruaj Kapacitetin
+                  </Button>
+                </div>
+              </Form>
           </Card.Body>
         </Card>
       )}
@@ -742,25 +740,25 @@ const CapacityManagement = () => {
           ) : filteredCapacities.length > 0 ? (
             <div className="table-responsive">
               <Table className="modern-table mb-0">
-                <thead>
-                  <tr>
-                    <th>Dita</th>
-                    <th>Dita e Javës</th>
-                    <th>Dyer Garazhi</th>
-                    <th>Kapgjik</th>
-                    <th>Veprime</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <thead>
+                <tr>
+                  <th>Dita</th>
+                  <th>Dita e Javës</th>
+                  <th>Dyer Garazhi</th>
+                  <th>Kapgjik</th>
+                  <th>Veprime</th>
+                </tr>
+              </thead>
+              <tbody>
                   {filteredCapacities.map(capacity => (
-                    <tr key={capacity.id || capacity.dita}>
+                  <tr key={capacity.id || capacity.dita}>
                       <td>
                         <div className="date-cell">
                           <Calendar3 className="me-2 text-muted" size={16} />
                           <strong>{format(new Date(capacity.dita), 'dd/MM/yyyy')}</strong>
-                        </div>
-                      </td>
-                      <td>
+                      </div>
+                    </td>
+                    <td>
                         <Badge bg="light" text="dark" className="day-badge">
                           {getAlbanianDayOfWeek(capacity.dita)}
                         </Badge>
@@ -785,47 +783,47 @@ const CapacityManagement = () => {
                           <div className="capacity-visual mt-2">
                             {renderCapacitySquares(capacity, 'kapake')}
                           </div>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="d-flex gap-2">
-                          <Button
-                            variant="info"
-                            size="sm"
+                      </div>
+                    </td>
+                    <td>
+                      <div className="d-flex gap-2">
+                            <Button 
+                              variant="info" 
+                              size="sm" 
                             onClick={() => handleViewOrders(capacity.dita)}
                             className="modern-btn-info"
                             title="Shiko porositë"
-                          >
+                            >
                             <Calendar3 size={14} />
-                          </Button>
+                            </Button>
                           {canManageCapacities && (
                             <>
-                              <Button
+                        <Button 
                                 variant="warning"
-                                size="sm"
+                          size="sm" 
                                 onClick={() => handleEdit(capacity)}
                                 className="modern-btn-warning"
                                 title="Ndrysho"
-                              >
+                        >
                                 <BarChart size={14} />
-                              </Button>
-                              <Button
-                                variant="danger"
-                                size="sm"
-                                onClick={() => handleDeleteClick(capacity)}
+                        </Button>
+                          <Button 
+                            variant="danger" 
+                            size="sm" 
+                            onClick={() => handleDeleteClick(capacity)}
                                 className="modern-btn-danger"
                                 title="Fshi"
-                              >
+                          >
                                 <Trash size={14} />
-                              </Button>
+                          </Button>
                             </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
             </div>
           ) : (
             <div className="empty-state">
@@ -869,9 +867,9 @@ const CapacityManagement = () => {
                 <Calendar3 size={48} className="text-warning" />
               </div>
               <p className="mb-0">
-                A jeni të sigurt që dëshironi të fshini kapacitetin për datën 
+              A jeni të sigurt që dëshironi të fshini kapacitetin për datën 
                 <strong className="text-primary"> {format(new Date(capacityToDelete.dita), 'dd/MM/yyyy')}</strong>?
-              </p>
+            </p>
             </div>
           )}
         </Modal.Body>
@@ -917,12 +915,12 @@ const CapacityManagement = () => {
                           <div className="detail-item">
                             <DoorOpen className="me-2 text-muted" size={14} />
                             <span className="me-3"><strong>Tipi:</strong> {order.tipiPorosise}</span>
-                          </div>
+                    </div>
                           <div className="detail-item">
                             <Person className="me-2 text-muted" size={14} />
                             <span><strong>Shitësi:</strong> {order.shitesi}</span>
-                          </div>
-                        </div>
+                    </div>
+                  </div>
                       </Col>
                       <Col md={4} className="text-end">
                         <Badge 
@@ -941,7 +939,7 @@ const CapacityManagement = () => {
                           >
                             Detaje
                           </Button>
-                        </div>
+                    </div>
                       </Col>
                     </Row>
                   </Card.Body>

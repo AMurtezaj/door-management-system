@@ -50,8 +50,11 @@ const startServer = async () => {
     // Sync models with database
     await dbModels.sync();
     
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`✅ Backend Server running on http://0.0.0.0:${PORT}`);
+      console.log(`📱 Local access: http://localhost:${PORT}`);
+      console.log(`🌐 Network access: http://[YOUR_IP_ADDRESS]:${PORT}`);
+      console.log(`💡 Find your IP address with: ipconfig (Windows) or ifconfig (Mac/Linux)`);
     });
   } catch (error) {
     console.error("Unable to start server:", error);

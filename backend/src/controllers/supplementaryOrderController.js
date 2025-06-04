@@ -266,6 +266,29 @@ const supplementaryOrderController = {
                 message: error.message || 'Diçka shkoi keq gjatë fshirjes së porosisë shtesë!' 
             });
         }
+    },
+
+    // Cancel partial payment for supplementary order
+    cancelPartialPayment: async (req, res) => {
+        try {
+            const { id } = req.params;
+            const { cancellationAmount } = req.body;
+
+            if (!cancellationAmount || cancellationAmount <= 0) {
+                return res.status(400).json({ 
+                    message: 'Shuma e anulimit është e detyrueshme dhe duhet të jetë pozitive' 
+                });
+            }
+
+            const result = await supplementaryOrderService.cancelPartialPayment(id, cancellationAmount);
+            
+            res.json(result);
+        } catch (error) {
+            console.error('Error cancelling supplementary order partial payment:', error);
+            res.status(400).json({ 
+                message: error.message || 'Ka ndodhur një gabim gjatë anulimit të pagesës'
+            });
+        }
     }
 };
 
