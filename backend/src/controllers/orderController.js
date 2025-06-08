@@ -24,50 +24,65 @@ const orderController = {
                     dita,
                     tipiPorosise,
                     pershkrimi,
-                    isPaymentDone
+                    isPaymentDone,
+                    isIncomplete
                 } = req.body;
 
-                // Validate required fields
-                const requiredFields = ['emriKlientit', 'mbiemriKlientit', 'numriTelefonit', 'vendi', 'shitesi', 'cmimiTotal', 'menyraPageses', 'tipiPorosise'];
+                // Check if this is an incomplete order (measurement-first workflow)
+                const isIncompleteOrder = isIncomplete === true;
+
+                // Validate required fields based on workflow type
+                let requiredFields;
+                if (isIncompleteOrder) {
+                    // For measurement-first workflow, only basic info is required
+                    requiredFields = ['emriKlientit', 'mbiemriKlientit', 'numriTelefonit', 'vendi', 'shitesi', 'menyraPageses', 'tipiPorosise'];
+                } else {
+                    // For complete orders, include financial info
+                    requiredFields = ['emriKlientit', 'mbiemriKlientit', 'numriTelefonit', 'vendi', 'shitesi', 'cmimiTotal', 'menyraPageses', 'tipiPorosise'];
+                }
+
                 for (const field of requiredFields) {
                     if (!req.body[field]) {
                         return res.status(400).json({ message: `Fusha ${field} është e detyrueshme!` });
                     }
                 }
 
-                // Validate numeric fields
-                if (isNaN(parseFloat(cmimiTotal))) {
+                // Validate numeric fields only if they are provided
+                if (cmimiTotal && cmimiTotal !== '' && isNaN(parseFloat(cmimiTotal))) {
                     return res.status(400).json({ message: 'CmimiTotal duhet të jetë një numër valid!' });
                 }
-                if (kaparja && isNaN(parseFloat(kaparja))) {
+                if (kaparja && kaparja !== '' && isNaN(parseFloat(kaparja))) {
                     return res.status(400).json({ message: 'Kaparja duhet të jetë një numër valid!' });
                 }
 
-                // Format dita to DATEONLY (YYYY-MM-DD)
-                const formattedDita = dita ? new Date(dita).toISOString().split('T')[0] : null;
-                if (!formattedDita) {
-                    return res.status(400).json({ message: 'Dita e realizimit është e detyrueshme!' });
-                }
+                // Format dita to DATEONLY (YYYY-MM-DD) - only for complete orders
+                let formattedDita = null;
+                if (!isIncompleteOrder) {
+                    formattedDita = dita ? new Date(dita).toISOString().split('T')[0] : null;
+                    if (!formattedDita) {
+                        return res.status(400).json({ message: 'Dita e realizimit është e detyrueshme për porosi të kompletuar!' });
+                    }
+                    
+                    // Check daily capacity only for complete orders
+                    const capacity = await DailyCapacity.findOne({ where: { dita: formattedDita } });
+                    if (!capacity) {
+                        return res.status(400).json({ message: 'Kapaciteti për këtë ditë nuk është caktuar!' });
+                    }
 
-                // Check daily capacity
-                const capacity = await DailyCapacity.findOne({ where: { dita: formattedDita } });
-                if (!capacity) {
-                    return res.status(400).json({ message: 'Kapaciteti për këtë ditë nuk është caktuar!' });
-                }
+                    if (tipiPorosise === 'derë garazhi' && capacity.dyerGarazhi <= 0) {
+                        return res.status(400).json({ message: 'Nuk ka kapacitet për dyer garazhi për këtë ditë!' });
+                    }
 
-                if (tipiPorosise === 'derë garazhi' && capacity.dyerGarazhi <= 0) {
-                    return res.status(400).json({ message: 'Nuk ka kapacitet për dyer garazhi për këtë ditë!' });
-                }
+                    if (tipiPorosise === 'kapak' && capacity.kapake <= 0) {
+                        return res.status(400).json({ message: 'Nuk ka kapacitet për kapakë për këtë ditë!' });
+                    }
 
-                if (tipiPorosise === 'kapak' && capacity.kapake <= 0) {
-                    return res.status(400).json({ message: 'Nuk ka kapacitet për kapakë për këtë ditë!' });
-                }
-
-                // Update capacity
-                if (tipiPorosise === 'derë garazhi') {
-                    await capacity.update({ dyerGarazhi: capacity.dyerGarazhi - 1 });
-                } else if (tipiPorosise === 'kapak') {
-                    await capacity.update({ kapake: capacity.kapake - 1 });
+                    // Update capacity only for complete orders
+                    if (tipiPorosise === 'derë garazhi') {
+                        await capacity.update({ dyerGarazhi: capacity.dyerGarazhi - 1 });
+                    } else if (tipiPorosise === 'kapak') {
+                        await capacity.update({ kapake: capacity.kapake - 1 });
+                    }
                 }
 
             // Prepare all order data with formatted date

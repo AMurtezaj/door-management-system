@@ -16,7 +16,8 @@ import {
   CurrencyExchange,
   Rulers,
   PlusSquare,
-  List
+  List,
+  Clock
 } from 'react-bootstrap-icons';
 import './Sidebar.css';
 
@@ -39,9 +40,15 @@ const Sidebar = ({ show, onHide }) => {
       roles: ['admin', 'menaxher'] 
     },
     { 
-      path: '/orders/unmeasured', 
-      label: 'Porositë e Pamatura', 
-      icon: <List size={20} />, 
+      path: '/orders/measurement', 
+      label: 'Filloj me Matje', 
+      icon: <Rulers size={20} />, 
+      roles: ['admin', 'menaxher'] 
+    },
+    { 
+      path: '/orders/incomplete', 
+      label: 'Porositë e Pakompletara', 
+      icon: <Clock size={20} />, 
       roles: ['admin', 'menaxher'] 
     },
     { 
@@ -60,12 +67,6 @@ const Sidebar = ({ show, onHide }) => {
       path: '/debt-management',
       label: 'Menaxhimi i Borxheve',
       icon: <CurrencyExchange size={20} />,
-      roles: ['admin', 'menaxher']
-    },
-    {
-      path: '/measurement-status',
-      label: 'Statusi i Matjeve',
-      icon: <Rulers size={20} />,
       roles: ['admin', 'menaxher']
     },
     {

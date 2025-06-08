@@ -45,9 +45,23 @@ const supplementaryOrderService = {
                 throw new Error(`Lokacioni duhet të jetë i njëjtë me porosinë kryesore: ${parentOrder.Customer.vendi}`);
             }
 
+            // Handle quantity and pricing
+            const sasia = supplementaryData.sasia && supplementaryData.sasia !== '' ? parseInt(supplementaryData.sasia) : 1;
+            let totalAmount = 0;
+            let cmimiNjesite = null;
+
+            if (supplementaryData.cmimiNjesite && supplementaryData.cmimiNjesite !== '') {
+                // Unit price provided - calculate total
+                cmimiNjesite = parseFloat(supplementaryData.cmimiNjesite);
+                totalAmount = cmimiNjesite * sasia;
+            } else if (supplementaryData.cmimiTotal && supplementaryData.cmimiTotal !== '') {
+                // Total price provided - calculate unit price
+                totalAmount = parseFloat(supplementaryData.cmimiTotal);
+                cmimiNjesite = totalAmount / sasia;
+            }
+
             // Calculate remaining payment
             const kaparjaAmount = parseFloat(kaparja || 0);
-            const totalAmount = parseFloat(cmimiTotal);
             const pagesaMbetur = totalAmount - kaparjaAmount;
 
             // Determine status based on payment - for backward compatibility only
@@ -66,6 +80,8 @@ const supplementaryOrderService = {
                 numriTelefonit,
                 vendi,
                 pershkrimiProduktit,
+                sasia: sasia,
+                cmimiNjesite: cmimiNjesite,
                 cmimiTotal: totalAmount,
                 kaparja: kaparjaAmount,
                 kaparaReceiver,
@@ -121,6 +137,41 @@ const supplementaryOrderService = {
             // Recalculate remaining payment if price or advance payment changes
             let pagesaMbetur = supplementaryOrder.pagesaMbetur;
             let statusi = supplementaryOrder.statusi;
+
+            // Handle quantity and pricing updates
+            const newSasia = updateData.sasia !== undefined ? parseInt(updateData.sasia) : parseInt(supplementaryOrder.sasia || 1);
+            let newCmimiTotal = 0;
+            let newCmimiNjesite = null;
+
+            if (updateData.cmimiNjesite !== undefined && updateData.cmimiNjesite !== '') {
+                // Unit price provided - calculate total
+                newCmimiNjesite = parseFloat(updateData.cmimiNjesite);
+                newCmimiTotal = newCmimiNjesite * newSasia;
+                updateData.cmimiTotal = newCmimiTotal;
+                updateData.cmimiNjesite = newCmimiNjesite;
+                updateData.sasia = newSasia;
+            } else if (updateData.cmimiTotal !== undefined && updateData.cmimiTotal !== '') {
+                // Total price provided - calculate unit price
+                newCmimiTotal = parseFloat(updateData.cmimiTotal);
+                newCmimiNjesite = newCmimiTotal / newSasia;
+                updateData.cmimiNjesite = newCmimiNjesite;
+                updateData.sasia = newSasia;
+            } else if (updateData.sasia !== undefined) {
+                // Only quantity changed - recalculate based on existing unit price
+                const existingUnitPrice = parseFloat(supplementaryOrder.cmimiNjesite || 0);
+                const existingTotal = parseFloat(supplementaryOrder.cmimiTotal || 0);
+                
+                if (existingUnitPrice > 0) {
+                    newCmimiNjesite = existingUnitPrice;
+                    newCmimiTotal = existingUnitPrice * newSasia;
+                    updateData.cmimiTotal = newCmimiTotal;
+                    updateData.cmimiNjesite = newCmimiNjesite;
+                } else if (existingTotal > 0) {
+                    newCmimiTotal = existingTotal;
+                    newCmimiNjesite = existingTotal / newSasia;
+                    updateData.cmimiNjesite = newCmimiNjesite;
+                }
+            }
 
             if (updateData.cmimiTotal !== undefined || updateData.kaparja !== undefined) {
                 const newTotal = updateData.cmimiTotal !== undefined ? parseFloat(updateData.cmimiTotal) : parseFloat(supplementaryOrder.cmimiTotal);

@@ -37,6 +37,17 @@ const SupplementaryOrder = sequelize.define('SupplementaryOrder', {
         allowNull: false,
         comment: 'Përshkrimi i produktit shtesë (keramika, etj.)'
     },
+    sasia: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 1,
+        comment: 'Quantity of supplementary products ordered'
+    },
+    cmimiNjesite: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
+        comment: 'Unit price per supplementary product'
+    },
     cmimiTotal: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,

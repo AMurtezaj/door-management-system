@@ -504,33 +504,6 @@ const OrderList = () => {
         </Alert>
       )}
       
-      <Alert variant="info" className="mb-4">
-        <div className="d-flex align-items-center">
-          <InfoCircle className="me-2" size={16} />
-          <div>
-            <strong>Njoftim:</strong> Porositë me status matjeje "E pamatur" janë të fshehura nga kjo listë. 
-            Ato do të shfaqen automatikisht kur statusi i matjes të ndryshohet në "E matur".
-            {orders.length !== filteredOrders.length && (
-              <div className="mt-1">
-                <small className="text-muted">
-                  {orders.length - filteredOrders.length} porosi të pamatura janë të fshehura aktualisht.
-                </small>
-              </div>
-            )}
-            <div className="mt-2">
-              <Button 
-                variant="outline-primary" 
-                size="sm"
-                onClick={() => navigate('/orders/unmeasured')}
-              >
-                <List className="me-1" size={14} />
-                Shiko Porositë e Pamatura
-              </Button>
-            </div>
-          </div>
-        </div>
-      </Alert>
-      
       <Row className="mb-3">
         <Col md={3}>
           <Button variant="primary" onClick={() => navigate('/orders/new')}>

@@ -9,11 +9,12 @@ import NotificationsPage from './pages/NotificationsPage';
 import OrderList from './components/orders/OrderList';
 import OrderForm from './components/orders/OrderForm';
 import OrderEdit from './components/orders/OrderEdit';
+import MeasurementEntryForm from './components/orders/MeasurementEntryForm';
+import IncompleteOrdersList from './components/orders/IncompleteOrdersList';
+import OrderCompletionForm from './components/orders/OrderCompletionForm';
 import CapacityManagement from './components/orders/CapacityManagement';
 import AdditionalOrdersPage from './components/orders/AdditionalOrdersPage';
-import UnmeasuredOrdersList from './components/orders/UnmeasuredOrdersList';
 import DebtManagementPage from './pages/DebtManagementPage';
-import MeasurementStatusPage from './pages/MeasurementStatusPage';
 import QRVerification from './components/verification/QRVerification';
 import QRScanner from './components/verification/QRScanner';
 import QRDebug from './components/verification/QRDebug';
@@ -41,13 +42,14 @@ const App = () => {
           <Route path="/orders" element={<OrderList />} />
           <Route path="/orders/new" element={<OrderForm />} />
           <Route path="/orders/edit/:id" element={<OrderEdit />} />
+          <Route path="/orders/measurement" element={<MeasurementEntryForm />} />
+          <Route path="/orders/incomplete" element={<IncompleteOrdersList />} />
+          <Route path="/orders/complete/:id" element={<OrderCompletionForm />} />
           <Route path="/orders/additional" element={<AdditionalOrdersPage />} />
           <Route path="/orders/capacity" element={<CapacityManagement />} />
-          <Route path="/orders/unmeasured" element={<UnmeasuredOrdersList />} />
           
           {/* Specialized Order Features */}
           <Route path="/debt-management" element={<DebtManagementPage />} />
-          <Route path="/measurement-status" element={<MeasurementStatusPage />} />
           
           {/* Notifications */}
           <Route path="/notifications" element={<NotificationsPage />} />

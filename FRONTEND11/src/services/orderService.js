@@ -21,6 +21,8 @@ const formatOrderResponse = (order) => {
   
   // Add Payment properties
   if (order.Payment) {
+    formattedOrder.sasia = order.Payment.sasia || 1;
+    formattedOrder.cmimiNjesite = order.Payment.cmimiNjesite;
     formattedOrder.cmimiTotal = order.Payment.cmimiTotal;
     formattedOrder.kaparja = order.Payment.kaparja;
     formattedOrder.kaparaReceiver = order.Payment.kaparaReceiver;
@@ -32,6 +34,10 @@ const formatOrderResponse = (order) => {
   
   // Add OrderDetails properties (note: backend sends as OrderDetail due to Sequelize association naming)
   if (order.OrderDetail) {
+    // Add sasia from OrderDetail as backup (should match Payment.sasia)
+    if (!formattedOrder.sasia) {
+      formattedOrder.sasia = order.OrderDetail.sasia || 1;
+    }
     formattedOrder.matesi = order.OrderDetail.matesi;
     formattedOrder.dataMatjes = order.OrderDetail.dataMatjes;
     formattedOrder.sender = order.OrderDetail.sender || '';
@@ -40,6 +46,7 @@ const formatOrderResponse = (order) => {
     formattedOrder.statusi = order.OrderDetail.statusi;
     formattedOrder.eshtePrintuar = order.OrderDetail.eshtePrintuar;
     formattedOrder.statusiMatjes = order.OrderDetail.statusiMatjes;
+    formattedOrder.isIncomplete = order.OrderDetail.isIncomplete || false;
     // Add dimension fields
     formattedOrder.gjatesia = order.OrderDetail.gjatesia;
     formattedOrder.gjeresia = order.OrderDetail.gjeresia;
@@ -49,9 +56,13 @@ const formatOrderResponse = (order) => {
     formattedOrder.gjeresiaFinale = order.OrderDetail.gjeresiaFinale;
   } else {
     // Ensure we always have these fields, even if OrderDetail is missing
+    if (!formattedOrder.sasia) {
+      formattedOrder.sasia = 1;
+    }
     formattedOrder.sender = '';
     formattedOrder.installer = '';
     formattedOrder.dita = null;
+    formattedOrder.isIncomplete = false;
     formattedOrder.gjatesia = null;
     formattedOrder.gjeresia = null;
     formattedOrder.profiliLarte = 0;

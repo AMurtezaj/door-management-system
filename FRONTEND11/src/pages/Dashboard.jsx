@@ -3,7 +3,7 @@ import { Row, Col, Card, Badge, Table, Spinner, Alert, Button, Container } from 
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   DoorOpen, DoorClosed, LockFill, ExclamationTriangleFill,
-  PeopleFill, ClockHistory, Bell, Calendar3, Cart, CurrencyDollar, People
+  PeopleFill, ClockHistory, Bell, Calendar3, Cart, CurrencyDollar, People, Rulers, Clock, PlusSquare
 } from 'react-bootstrap-icons';
 import { getAllDoors } from '../services/doorService';
 import { getAllNotifications } from '../services/notificationService';
@@ -209,6 +209,66 @@ const Dashboard = () => {
                 <div className="stat-label">Borxhe Totale</div>
                 <h4 className="stat-value text-danger">{(debtStats.totalCombinedCashDebt + debtStats.totalCombinedBankDebt)?.toFixed(2) || '0.00'}€</h4>
               </div>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+      
+      {/* Quick Actions Section */}
+      <Row className="mb-4">
+        <Col>
+          <Card className="border-0 shadow-sm">
+            <Card.Header className="bg-primary text-white">
+              <div className="d-flex align-items-center">
+                <Cart className="me-2" size={20} />
+                <h5 className="mb-0">Veprime të Shpejta</h5>
+              </div>
+            </Card.Header>
+            <Card.Body>
+              <Row>
+                <Col md={4} className="mb-3">
+                  <Button 
+                    variant="outline-primary" 
+                    size="lg"
+                    onClick={() => navigate('/orders/new')}
+                    className="w-100 d-flex align-items-center justify-content-center py-3"
+                  >
+                    <Cart className="me-2" size={20} />
+                    <div>
+                      <div className="fw-bold">Porosi e Re</div>
+                      <small className="text-muted">Krijoni një porosi të kompletë</small>
+                    </div>
+                  </Button>
+                </Col>
+                <Col md={4} className="mb-3">
+                  <Button 
+                    variant="outline-success" 
+                    size="lg"
+                    onClick={() => navigate('/orders/measurement')}
+                    className="w-100 d-flex align-items-center justify-content-center py-3"
+                  >
+                    <Rulers className="me-2" size={20} />
+                    <div>
+                      <div className="fw-bold">Filloj me Matje</div>
+                      <small className="text-muted">Regjistroni matjet, kompletoni më vonë</small>
+                    </div>
+                  </Button>
+                </Col>
+                <Col md={4} className="mb-3">
+                  <Button 
+                    variant="outline-warning" 
+                    size="lg"
+                    onClick={() => navigate('/orders/incomplete')}
+                    className="w-100 d-flex align-items-center justify-content-center py-3"
+                  >
+                    <Clock className="me-2" size={20} />
+                    <div>
+                      <div className="fw-bold">Porositë e Pakompletara</div>
+                      <small className="text-muted">Kompletoni porositë e nisura</small>
+                    </div>
+                  </Button>
+                </Col>
+              </Row>
             </Card.Body>
           </Card>
         </Col>

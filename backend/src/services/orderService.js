@@ -28,26 +28,47 @@ const orderService = {
                 pershkrimi: orderData.pershkrimi
             }, { transaction: t });
 
+            // Handle quantity and pricing
+            const sasia = orderData.sasia && orderData.sasia !== '' ? parseInt(orderData.sasia) : 1;
+            let totalAmount = 0;
+            let cmimiNjesite = null;
+
+            if (orderData.cmimiNjesite && orderData.cmimiNjesite !== '') {
+                // Unit price provided - calculate total
+                cmimiNjesite = parseFloat(orderData.cmimiNjesite);
+                totalAmount = cmimiNjesite * sasia;
+            } else if (orderData.cmimiTotal && orderData.cmimiTotal !== '') {
+                // Total price provided - calculate unit price
+                totalAmount = parseFloat(orderData.cmimiTotal);
+                cmimiNjesite = totalAmount / sasia;
+            }
+
             // Create payment information
             const isPaid = orderData.isPaymentDone === true;
-            const pagesaMbeturCalculated = parseFloat(orderData.cmimiTotal) - parseFloat(orderData.kaparja || 0);
+            const advanceAmount = orderData.kaparja && orderData.kaparja !== '' ? parseFloat(orderData.kaparja) : 0;
+            const pagesaMbeturCalculated = totalAmount - advanceAmount;
             
             // For backward compatibility, set old statusi field based on payment
             let statusi = 'në proces';
             let debtType = 'none';
             
-            if (!isPaid && pagesaMbeturCalculated > 0) {
-                statusi = 'borxh';
-                debtType = orderData.menyraPageses; // 'kesh' or 'banke'
-            } else if (isPaid || pagesaMbeturCalculated <= 0) {
-                statusi = 'e përfunduar';
-                debtType = 'none';
+            // Only calculate debt if there's a total amount
+            if (totalAmount > 0) {
+                if (!isPaid && pagesaMbeturCalculated > 0) {
+                    statusi = 'borxh';
+                    debtType = orderData.menyraPageses; // 'kesh' or 'banke'
+                } else if (isPaid || pagesaMbeturCalculated <= 0) {
+                    statusi = 'e përfunduar';
+                    debtType = 'none';
+                }
             }
 
             await Payment.create({
                 orderId: order.id,
-                cmimiTotal: orderData.cmimiTotal,
-                kaparja: orderData.kaparja || 0,
+                sasia: sasia,
+                cmimiNjesite: cmimiNjesite,
+                cmimiTotal: totalAmount,
+                kaparja: advanceAmount,
                 kaparaReceiver: orderData.kaparaReceiver,
                 menyraPageses: orderData.menyraPageses,
                 isPaymentDone: isPaid,
@@ -57,6 +78,7 @@ const orderService = {
             // Create order details
             await OrderDetails.create({
                 orderId: order.id,
+                sasia: sasia,
                 matesi: orderData.matesi,
                 dataMatjes: orderData.dataMatjes,
                 sender: orderData.sender,
@@ -69,7 +91,8 @@ const orderService = {
                 gjatesia: orderData.gjatesia,
                 gjeresia: orderData.gjeresia,
                 profiliLarte: orderData.profiliLarte || 0,
-                profiliPoshtem: orderData.profiliPoshtem || 0
+                profiliPoshtem: orderData.profiliPoshtem || 0,
+                isIncomplete: orderData.isIncomplete || false
             }, { transaction: t });
 
             return order;
@@ -110,8 +133,33 @@ const orderService = {
             // Update payment
             const payment = await Payment.findOne({ where: { orderId }, transaction: t });
             if (payment) {
-                // Get the new values or use the existing ones
-                const newCmimiTotal = orderData.cmimiTotal !== undefined ? parseFloat(orderData.cmimiTotal) : parseFloat(payment.cmimiTotal);
+                // Handle quantity and pricing updates
+                const newSasia = orderData.sasia !== undefined ? parseInt(orderData.sasia) : parseInt(payment.sasia || 1);
+                let newCmimiTotal = 0;
+                let newCmimiNjesite = null;
+
+                if (orderData.cmimiNjesite !== undefined && orderData.cmimiNjesite !== '') {
+                    // Unit price provided - calculate total
+                    newCmimiNjesite = parseFloat(orderData.cmimiNjesite);
+                    newCmimiTotal = newCmimiNjesite * newSasia;
+                } else if (orderData.cmimiTotal !== undefined && orderData.cmimiTotal !== '') {
+                    // Total price provided - calculate unit price
+                    newCmimiTotal = parseFloat(orderData.cmimiTotal);
+                    newCmimiNjesite = newCmimiTotal / newSasia;
+                } else {
+                    // Neither provided - use existing values and recalculate if quantity changed
+                    const existingUnitPrice = parseFloat(payment.cmimiNjesite || 0);
+                    const existingTotal = parseFloat(payment.cmimiTotal || 0);
+                    
+                    if (existingUnitPrice > 0) {
+                        newCmimiNjesite = existingUnitPrice;
+                        newCmimiTotal = existingUnitPrice * newSasia;
+                    } else if (existingTotal > 0) {
+                        newCmimiTotal = existingTotal;
+                        newCmimiNjesite = existingTotal / newSasia;
+                    }
+                }
+
                 const newKaparja = orderData.kaparja !== undefined ? parseFloat(orderData.kaparja) : parseFloat(payment.kaparja);
                 const isPaid = orderData.isPaymentDone !== undefined ? orderData.isPaymentDone : payment.isPaymentDone;
                 const pagesaMbeturCalculated = newCmimiTotal - newKaparja;
@@ -129,6 +177,8 @@ const orderService = {
                 }
 
                 await payment.update({
+                    sasia: newSasia,
+                    cmimiNjesite: newCmimiNjesite,
                     cmimiTotal: newCmimiTotal,
                     kaparja: newKaparja,
                     kaparaReceiver: orderData.kaparaReceiver !== undefined ? orderData.kaparaReceiver : payment.kaparaReceiver,
@@ -141,6 +191,7 @@ const orderService = {
                 const orderDetails = await OrderDetails.findOne({ where: { orderId }, transaction: t });
                 if (orderDetails) {
                     await orderDetails.update({
+                        sasia: newSasia,
                         matesi: orderData.matesi !== undefined ? orderData.matesi : orderDetails.matesi,
                         dataMatjes: orderData.dataMatjes !== undefined ? orderData.dataMatjes : orderDetails.dataMatjes,
                         sender: orderData.sender !== undefined ? orderData.sender : orderDetails.sender,
@@ -153,7 +204,8 @@ const orderService = {
                         gjatesia: orderData.gjatesia !== undefined ? orderData.gjatesia : orderDetails.gjatesia,
                         gjeresia: orderData.gjeresia !== undefined ? orderData.gjeresia : orderDetails.gjeresia,
                         profiliLarte: orderData.profiliLarte !== undefined ? orderData.profiliLarte : orderDetails.profiliLarte,
-                        profiliPoshtem: orderData.profiliPoshtem !== undefined ? orderData.profiliPoshtem : orderDetails.profiliPoshtem
+                        profiliPoshtem: orderData.profiliPoshtem !== undefined ? orderData.profiliPoshtem : orderDetails.profiliPoshtem,
+                        isIncomplete: orderData.isIncomplete !== undefined ? orderData.isIncomplete : orderDetails.isIncomplete
                     }, { transaction: t });
                 }
             }
@@ -360,15 +412,10 @@ async function getCompleteOrderById(id) {
 }
 
 module.exports = {
-    createOrder: orderService.createOrder,
-    getAllOrders: orderService.getAllOrders,
-    getOrderById: orderService.getOrderById,
-    updateOrder: orderService.updateOrder,
-    deleteOrder: orderService.deleteOrder,
+    createCompleteOrder: orderService.createCompleteOrder,
+    updateCompleteOrder: orderService.updateCompleteOrder,
     updatePaymentStatus: orderService.updatePaymentStatus,
-    updateOrderStatus: orderService.updateOrderStatus,
-    getOrdersByDay: orderService.getOrdersByDay,
-    completeOrder: orderService.completeOrder,
     addPartialPayment: orderService.addPartialPayment,
+    updateProductStatus: orderService.updateProductStatus,
     cancelPartialPayment: orderService.cancelPartialPayment
 }; 

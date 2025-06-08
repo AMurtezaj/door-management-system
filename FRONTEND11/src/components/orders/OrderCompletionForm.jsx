@@ -1,42 +1,83 @@
 import React, { useState, useEffect } from 'react';
 import { Form, Button, Container, Row, Col, Card, Alert, Badge, ProgressBar } from 'react-bootstrap';
 import { 
-  Person, 
-  Telephone, 
-  GeoAlt, 
-  People, 
-  List, 
-  Calendar, 
   CurrencyEuro, 
   CreditCard, 
-  Tools, 
-  Truck, 
-  House,
-  FileText,
-  CheckCircle,
+  CheckCircle, 
   Save,
   X,
-  InfoCircle
+  InfoCircle,
+  People,
+  Person,
+  Telephone,
+  GeoAlt,
+  Calendar,
+  FileText,
+  House,
+  List,
+  Tools,
+  Truck
 } from 'react-bootstrap-icons';
+import { useNavigate, useParams } from 'react-router-dom';
 import { format } from 'date-fns';
-import { sq } from 'date-fns/locale';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { createOrder } from '../../services/orderService';
-import { getAllCapacities } from '../../services/capacityService';
+import { getOrderById, updateOrder } from '../../services/orderService';
 import './OrderForm.css';
 
-const OrderForm = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const selectedDateFromDashboard = location.state?.selectedDate;
+// Add inline styles for this component
+const styles = `
+  .readonly-field {
+    background-color: #f8f9fa !important;
+    border: 1px solid #e9ecef !important;
+    color: #6c757d !important;
+  }
   
-  const [capacities, setCapacities] = useState([]);
-  const [loading, setLoading] = useState(false);
+  .calculation-display {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    margin-top: 1rem;
+  }
+  
+  .calculation-title {
+    color: #495057;
+    margin-bottom: 0.5rem;
+  }
+  
+  .calculation-item {
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+  }
+  
+  .calculation-item .result {
+    color: #28a745;
+    font-weight: bold;
+    margin-left: 0.5rem;
+  }
+`;
+
+const OrderCompletionForm = () => {
+  const navigate = useNavigate();
+  const { id } = useParams();
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [currentStep, setCurrentStep] = useState(1);
+  const [originalOrder, setOriginalOrder] = useState(null);
   
+  // Using the same field names as OrderForm for consistency
   const [formData, setFormData] = useState({
+    sasia: '1', // Quantity field
+    cmimiNjesite: '', // Unit price field
+    cmimiTotal: '',
+    kaparja: '0',
+    kaparaReceiver: '',
+    sender: '',
+    installer: '',
+    menyraPageses: 'kesh',
+    isPaymentDone: false,
+    pershkrimi: '', // Allow updating description
+    // Keep existing measurement and customer data (will be populated from original order)
     emriKlientit: '',
     mbiemriKlientit: '',
     numriTelefonit: '',
@@ -44,24 +85,13 @@ const OrderForm = () => {
     shitesi: '',
     matesi: '',
     dataMatjes: '',
-    sasia: '1',
-    cmimiNjesite: '',
-    cmimiTotal: '',
-    kaparja: '0',
-    kaparaReceiver: '',
-    sender: '',
-    installer: '',
-    menyraPageses: 'kesh',
-    dita: selectedDateFromDashboard || format(new Date(), 'yyyy-MM-dd'),
-    tipiPorosise: 'derë garazhi',
-    pershkrimi: '',
-    isPaymentDone: false,
-    eshtePrintuar: false,
-    statusiMatjes: 'e pamatur',
+    dita: '',
+    tipiPorosise: '',
+    statusiMatjes: '',
     gjatesia: '',
     gjeresia: '',
-    profiliLarte: '0',
-    profiliPoshtem: '0'
+    profiliLarte: '',
+    profiliPoshtem: ''
   });
   
   // Calculated field
@@ -99,28 +129,58 @@ const OrderForm = () => {
     }
   }, [formData.cmimiTotal, formData.sasia]);
 
-  // Calculate form completion percentage
-  const calculateProgress = () => {
-    const requiredFields = ['emriKlientit', 'mbiemriKlientit', 'numriTelefonit', 'vendi', 'shitesi', 'cmimiTotal', 'dita'];
-    const filledFields = requiredFields.filter(field => formData[field] && formData[field].toString().trim() !== '');
-    return Math.round((filledFields.length / requiredFields.length) * 100);
-  };
-  
-  // Fetch daily capacities
   useEffect(() => {
-    const fetchCapacities = async () => {
-      try {
-        const data = await getAllCapacities();
-        setCapacities(data);
-      } catch (err) {
-        console.error('Error fetching capacities:', err);
-        setError('Ka ndodhur një gabim gjatë marrjes së kapaciteteve');
-      }
-    };
-    
-    fetchCapacities();
-  }, []);
-  
+    if (id) {
+      fetchOrderData();
+    }
+  }, [id]);
+
+  const fetchOrderData = async () => {
+    try {
+      setLoading(true);
+      const orderData = await getOrderById(id);
+      setOriginalOrder(orderData);
+      
+      // Pre-fill form with existing data
+      setFormData({
+        // Financial data (mostly empty, to be completed)
+        sasia: orderData.sasia || '1',
+        cmimiNjesite: orderData.cmimiNjesite || '',
+        cmimiTotal: orderData.cmimiTotal || '',
+        kaparja: orderData.kaparja || '0',
+        kaparaReceiver: orderData.kaparaReceiver || '',
+        menyraPageses: orderData.menyraPageses || 'kesh',
+        isPaymentDone: orderData.isPaymentDone || false,
+        
+        // Personnel data (to be completed)
+        sender: orderData.sender || '',
+        installer: orderData.installer || '',
+        
+        // Existing data (read-only display)
+        emriKlientit: orderData.emriKlientit || '',
+        mbiemriKlientit: orderData.mbiemriKlientit || '',
+        numriTelefonit: orderData.numriTelefonit || '',
+        vendi: orderData.vendi || '',
+        shitesi: orderData.shitesi || '',
+        matesi: orderData.matesi || '',
+        dataMatjes: orderData.dataMatjes || '',
+        dita: orderData.dita || '',
+        tipiPorosise: orderData.tipiPorosise || '',
+        statusiMatjes: orderData.statusiMatjes || '',
+        gjatesia: orderData.gjatesia || '',
+        gjeresia: orderData.gjeresia || '',
+        profiliLarte: orderData.profiliLarte || '',
+        profiliPoshtem: orderData.profiliPoshtem || '',
+        pershkrimi: orderData.pershkrimi || ''
+      });
+      
+      setLoading(false);
+    } catch (err) {
+      setError('Ka ndodhur një gabim gjatë ngarkimit të porosisë');
+      setLoading(false);
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -128,54 +188,50 @@ const OrderForm = () => {
       [name]: type === 'checkbox' ? checked : value
     }));
   };
-  
-  const checkCapacity = () => {
-    const selectedDay = formData.dita;
-    const dayCapacity = capacities.find(c => c.dita === selectedDay);
-    
-    if (!dayCapacity) return { valid: false, message: 'Nuk ka kapacitet të konfiguruar për këtë ditë. Ju lutem zgjidhni një ditë tjetër.' };
-    
-    if (formData.tipiPorosise === 'derë garazhi') {
-      if (dayCapacity.dyerGarazhi <= 0) {
-        return { valid: false, message: 'Nuk ka kapacitet të disponueshëm për dyer garazhi për këtë ditë.' };
-      }
-    }
-    
-    if (formData.tipiPorosise === 'kapak') {
-      if (dayCapacity.kapake <= 0) {
-        return { valid: false, message: 'Nuk ka kapacitet të disponueshëm për kapgjik për këtë ditë.' };
-      }
-    }
-    
-    return { valid: true };
-  };
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
     
-    // Validate capacity
-    const capacityCheck = checkCapacity();
-    if (!capacityCheck.valid) {
-      setError(capacityCheck.message);
+    // Validate required financial fields
+    if (!formData.cmimiTotal) {
+      setError('Ju lutem plotësoni çmimin total!');
       return;
     }
     
-    // Validate required fields
-    if (!formData.emriKlientit || !formData.mbiemriKlientit || !formData.numriTelefonit || 
-        !formData.vendi || !formData.shitesi || !formData.cmimiTotal || !formData.dita) {
-      setError('Ju lutem plotësoni të gjitha fushat e detyrueshme!');
-      return;
-    }
-    
-    setLoading(true);
+    setSaving(true);
     
     try {
-      await createOrder(formData);
+      // Prepare update data - only send fields that can be updated
+      const updateData = {
+        sasia: formData.sasia,
+        cmimiNjesite: formData.cmimiNjesite,
+        cmimiTotal: formData.cmimiTotal,
+        kaparja: formData.kaparja,
+        kaparaReceiver: formData.kaparaReceiver,
+        menyraPageses: formData.menyraPageses,
+        isPaymentDone: formData.isPaymentDone,
+        sender: formData.sender,
+        installer: formData.installer,
+        pershkrimi: formData.pershkrimi,
+        dita: formData.dita,
+        // Include measurement information updates
+        matesi: formData.matesi,
+        dataMatjes: formData.dataMatjes,
+        statusiMatjes: formData.statusiMatjes,
+        // Include dimension updates
+        gjatesia: formData.gjatesia || null,
+        gjeresia: formData.gjeresia || null,
+        profiliLarte: formData.profiliLarte || 0,
+        profiliPoshtem: formData.profiliPoshtem || 0,
+        // Mark as complete by removing the incomplete flag
+        isIncomplete: false
+      };
       
-      setSuccess('Porosia u krijua me sukses!');
-      // Reset form or redirect
+      await updateOrder(id, updateData);
+      
+      setSuccess('Porosia u kompletua me sukses!');
       setTimeout(() => {
         navigate('/orders');
       }, 2000);
@@ -183,131 +239,101 @@ const OrderForm = () => {
       if (err.response && err.response.data && err.response.data.message) {
         setError(err.response.data.message);
       } else {
-        setError('Ka ndodhur një gabim gjatë krijimit të porosisë');
+        setError('Ka ndodhur një gabim gjatë kompletimit të porosisë');
       }
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
-  
-  // Function to render capacity visualization for the selected day
-  const renderDayCapacity = () => {
-    const selectedDay = formData.dita;
-    const capacity = capacities.find(c => c.dita === selectedDay);
+
+  // Calculate form completion percentage
+  const calculateProgress = () => {
+    const requiredFields = ['cmimiTotal'];
+    const optionalFields = ['kaparja', 'kaparaReceiver', 'sender', 'installer', 'gjatesia', 'gjeresia'];
+    const allFields = [...requiredFields, ...optionalFields];
     
-    if (!capacity) {
-      return (
-        <Alert variant="warning" className="capacity-alert">
-          <InfoCircle className="me-2" />
-          Nuk ka kapacitet të caktuar për këtë ditë. Ju lutem caktoni kapacitetin e ditës.
-        </Alert>
-      );
-    }
+    const completedRequired = requiredFields.filter(field => 
+      formData[field] && formData[field].toString().trim() !== ''
+    ).length;
     
-    const renderSquares = (type) => {
-      const available = Math.max(0, capacity[type] || 0);
-      const squares = [];
-      
-      // Create squares to represent available capacity
-      for (let i = 0; i < available; i++) {
-        squares.push(
-          <div 
-            key={`${type}-${i}`}
-            className="capacity-square available"
-          />
-        );
-      }
-      
-      return (
-        <div className="capacity-squares d-flex gap-1 flex-wrap">
-          {squares}
-        </div>
-      );
-    };
+    const completedOptional = optionalFields.filter(field => 
+      formData[field] && formData[field].toString().trim() !== ''
+    ).length;
     
-    // Get day of week in Albanian
-    const dayOfWeek = format(new Date(selectedDay), 'EEEE', { locale: sq });
+    // Required fields count as 60%, optional as 40%
+    const requiredProgress = (completedRequired / requiredFields.length) * 60;
+    const optionalProgress = (completedOptional / optionalFields.length) * 40;
     
-    return (
-      <Card className="capacity-card mb-4">
-        <Card.Header className="capacity-header">
-          <div className="d-flex align-items-center">
-            <Calendar className="me-2 text-primary" size={20} />
-            <h5 className="mb-0">Kapaciteti për {format(new Date(selectedDay), 'dd/MM/yyyy')} ({dayOfWeek})</h5>
-          </div>
-        </Card.Header>
-        <Card.Body>
-          <Row>
-            <Col md={6}>
-              <div className="capacity-item">
-                <div className="d-flex align-items-center mb-2">
-                  <House className="me-2 text-success" size={18} />
-                  <h6 className="mb-0">Dyer Garazhi: {capacity.dyerGarazhi || 0} të disponueshme</h6>
-                </div>
-                {renderSquares('dyerGarazhi')}
-              </div>
-            </Col>
-            <Col md={6}>
-              <div className="capacity-item">
-                <div className="d-flex align-items-center mb-2">
-                  <Tools className="me-2 text-info" size={18} />
-                  <h6 className="mb-0">Kapgjik: {capacity.kapake || 0} të disponueshëm</h6>
-                </div>
-                {renderSquares('kapake')}
-              </div>
-            </Col>
-          </Row>
-        </Card.Body>
-      </Card>
-    );
+    return Math.round(requiredProgress + optionalProgress);
   };
 
   const progress = calculateProgress();
-  
+
+  if (loading) {
+    return (
+      <Container className="text-center mt-5">
+        <div className="spinner-border" role="status">
+          <span className="visually-hidden">Duke ngarkuar...</span>
+        </div>
+      </Container>
+    );
+  }
+
+  if (!originalOrder) {
+    return (
+      <Container className="mt-5">
+        <Alert variant="danger">
+          Porosia nuk u gjet!
+        </Alert>
+      </Container>
+    );
+  }
+
   return (
-    <Container className="order-form-container py-4">
-      <div className="form-header mb-4">
-        <div className="d-flex justify-content-between align-items-center">
-          <div>
-            <h2 className="form-title mb-2">
-              <FileText className="me-3 text-primary" size={32} />
-              Krijo Porosi të Re
-            </h2>
-            <p className="form-subtitle text-muted">
-              Plotësoni të gjitha informacionet e nevojshme për porosinë e re
+    <Container className="order-form-container">
+      {/* Inject custom styles */}
+      <style>{styles}</style>
+      
+      {/* Header */}
+      <Card className="form-header mb-4">
+        <Row>
+          <Col md={8}>
+            <h1 className="form-title">
+              <CheckCircle className="me-3" size={40} />
+              Kompletimi i Porosisë #{id}
+            </h1>
+            <p className="form-subtitle">
+              Kompletoni informacionet e mbetura për të finalizuar porosinë.
             </p>
-          </div>
-          <div className="progress-section">
-            <div className="d-flex align-items-center mb-2">
-              <span className="me-2 text-muted">Përparimi:</span>
-              <Badge bg={progress === 100 ? 'success' : progress > 50 ? 'warning' : 'secondary'}>
-                {progress}%
-              </Badge>
-            </div>
+          </Col>
+          <Col md={4} className="progress-section">
+            <Badge bg={progress === 100 ? 'success' : 'warning'} className="mb-2">
+              {progress}% Kompletuar
+            </Badge>
             <ProgressBar 
               now={progress} 
-              variant={progress === 100 ? 'success' : progress > 50 ? 'warning' : 'info'}
-              style={{ width: '200px', height: '8px' }}
+              variant={progress === 100 ? 'success' : 'warning'}
+              className="progress-bar-custom"
             />
-          </div>
-        </div>
-      </div>
+          </Col>
+        </Row>
+      </Card>
 
+      {/* Error/Success Messages */}
       {error && (
-        <Alert variant="danger" className="modern-alert">
-          <X className="me-2" />
+        <Alert variant="danger" className="modern-alert mb-4">
+          <X className="me-2" size={20} />
           {error}
         </Alert>
       )}
+      
       {success && (
-        <Alert variant="success" className="modern-alert">
-          <CheckCircle className="me-2" />
+        <Alert variant="success" className="modern-alert mb-4">
+          <CheckCircle className="me-2" size={20} />
           {success}
         </Alert>
       )}
-      
-      {formData.dita && renderDayCapacity()}
-      
+
       <Form onSubmit={handleSubmit} className="modern-form">
         {/* Customer Information Section */}
         <Card className="form-section mb-4">
@@ -323,16 +349,13 @@ const OrderForm = () => {
                 <Form.Group className="form-group mb-3">
                   <Form.Label className="form-label">
                     <Person className="me-2" size={16} />
-                    Emri i Klientit <span className="required">*</span>
+                    Emri i Klientit
                   </Form.Label>
                   <Form.Control
                     type="text"
-                    name="emriKlientit"
                     value={formData.emriKlientit}
-                    onChange={handleChange}
-                    className="form-input"
-                    placeholder="Shkruani emrin"
-                    required
+                    readOnly
+                    className="form-input readonly-field"
                   />
                 </Form.Group>
               </Col>
@@ -341,16 +364,13 @@ const OrderForm = () => {
                 <Form.Group className="form-group mb-3">
                   <Form.Label className="form-label">
                     <Person className="me-2" size={16} />
-                    Mbiemri i Klientit <span className="required">*</span>
+                    Mbiemri i Klientit
                   </Form.Label>
                   <Form.Control
                     type="text"
-                    name="mbiemriKlientit"
                     value={formData.mbiemriKlientit}
-                    onChange={handleChange}
-                    className="form-input"
-                    placeholder="Shkruani mbiemrin"
-                    required
+                    readOnly
+                    className="form-input readonly-field"
                   />
                 </Form.Group>
               </Col>
@@ -359,16 +379,13 @@ const OrderForm = () => {
                 <Form.Group className="form-group mb-3">
                   <Form.Label className="form-label">
                     <Telephone className="me-2" size={16} />
-                    Numri i Telefonit <span className="required">*</span>
+                    Numri i Telefonit
                   </Form.Label>
                   <Form.Control
                     type="text"
-                    name="numriTelefonit"
                     value={formData.numriTelefonit}
-                    onChange={handleChange}
-                    className="form-input"
-                    placeholder="+355 XX XXX XXX"
-                    required
+                    readOnly
+                    className="form-input readonly-field"
                   />
                 </Form.Group>
               </Col>
@@ -379,16 +396,13 @@ const OrderForm = () => {
                 <Form.Group className="form-group mb-3">
                   <Form.Label className="form-label">
                     <GeoAlt className="me-2" size={16} />
-                    Vendi <span className="required">*</span>
+                    Vendi
                   </Form.Label>
                   <Form.Control
                     type="text"
-                    name="vendi"
                     value={formData.vendi}
-                    onChange={handleChange}
-                    className="form-input"
-                    placeholder="Shkruani vendndodhjen"
-                    required
+                    readOnly
+                    className="form-input readonly-field"
                   />
                 </Form.Group>
               </Col>
@@ -397,16 +411,13 @@ const OrderForm = () => {
                 <Form.Group className="form-group mb-3">
                   <Form.Label className="form-label">
                     <People className="me-2" size={16} />
-                    Shitësi <span className="required">*</span>
+                    Shitësi
                   </Form.Label>
                   <Form.Control
                     type="text"
-                    name="shitesi"
                     value={formData.shitesi}
-                    onChange={handleChange}
-                    className="form-input"
-                    placeholder="Emri i shitësit"
-                    required
+                    readOnly
+                    className="form-input readonly-field"
                   />
                 </Form.Group>
               </Col>
@@ -421,10 +432,11 @@ const OrderForm = () => {
               <List className="me-2 text-success" size={20} />
               <h5 className="mb-0">Informacionet e Matjes</h5>
             </div>
+            <small className="text-muted">Mund t'i përditësoni këto informacione gjatë kompletimit</small>
           </Card.Header>
           <Card.Body className="section-body">
             <Row>
-              <Col md={4}>
+              <Col md={6}>
                 <Form.Group className="form-group mb-3">
                   <Form.Label className="form-label">
                     <People className="me-2" size={16} />
@@ -433,7 +445,7 @@ const OrderForm = () => {
                   <Form.Control
                     type="text"
                     name="matesi"
-                    value={formData.matesi}
+                    value={formData.matesi || ''}
                     onChange={handleChange}
                     className="form-input"
                     placeholder="Emri i matësit"
@@ -441,7 +453,7 @@ const OrderForm = () => {
                 </Form.Group>
               </Col>
               
-              <Col md={4}>
+              <Col md={6}>
                 <Form.Group className="form-group mb-3">
                   <Form.Label className="form-label">
                     <Calendar className="me-2" size={16} />
@@ -450,14 +462,16 @@ const OrderForm = () => {
                   <Form.Control
                     type="date"
                     name="dataMatjes"
-                    value={formData.dataMatjes}
+                    value={formData.dataMatjes ? formData.dataMatjes.split('T')[0] : ''}
                     onChange={handleChange}
                     className="form-input"
                   />
                 </Form.Group>
               </Col>
-              
-              <Col md={4}>
+            </Row>
+            
+            <Row>
+              <Col md={6}>
                 <Form.Group className="form-group mb-3">
                   <Form.Label className="form-label">
                     <CheckCircle className="me-2" size={16} />
@@ -472,6 +486,9 @@ const OrderForm = () => {
                     <option value="e pamatur">📏 E Pamatur</option>
                     <option value="e matur">✅ E Matur</option>
                   </Form.Select>
+                  <Form.Text className="text-muted">
+                    Përditësoni statusin e matjes nëse është ndryshuar
+                  </Form.Text>
                 </Form.Group>
               </Col>
             </Row>
@@ -628,6 +645,35 @@ const OrderForm = () => {
                 </Form.Group>
               </Col>
             </Row>
+            
+            <Row>
+              <Col md={6}>
+                <Form.Group className="form-group mb-3">
+                  <Form.Label className="form-label">
+                    <CheckCircle className="me-2" size={16} />
+                    Pagesa Përfunduar
+                  </Form.Label>
+                  <Form.Select
+                    name="isPaymentDone"
+                    value={formData.isPaymentDone ? 'true' : 'false'}
+                    onChange={(e) => handleChange({
+                      target: {
+                        name: 'isPaymentDone',
+                        value: e.target.value === 'true',
+                        type: 'select'
+                      }
+                    })}
+                    className="form-input"
+                  >
+                    <option value="false">❌ Jo</option>
+                    <option value="true">✅ Po</option>
+                  </Form.Select>
+                  <Form.Text className="text-muted">
+                    A është pagesa përfunduar plotësisht?
+                  </Form.Text>
+                </Form.Group>
+              </Col>
+            </Row>
           </Card.Body>
         </Card>
 
@@ -697,11 +743,15 @@ const OrderForm = () => {
                   <Form.Control
                     type="date"
                     name="dita"
-                    value={formData.dita}
+                    value={formData.dita || format(new Date(), 'yyyy-MM-dd')}
                     onChange={handleChange}
                     className="form-input"
                     required
                   />
+                  <Form.Text className="text-muted">
+                    <InfoCircle className="me-1" size={12} />
+                    Data e prodhimit/dorëzimit të porosisë
+                  </Form.Text>
                 </Form.Group>
               </Col>
               
@@ -709,18 +759,14 @@ const OrderForm = () => {
                 <Form.Group className="form-group mb-3">
                   <Form.Label className="form-label">
                     <House className="me-2" size={16} />
-                    Tipi i Porosisë <span className="required">*</span>
+                    Tipi i Porosisë
                   </Form.Label>
-                  <Form.Select
-                    name="tipiPorosise"
-                    value={formData.tipiPorosise}
-                    onChange={handleChange}
-                    className="form-input"
-                    required
-                  >
-                    <option value="derë garazhi">🏠 Derë Garazhi</option>
-                    <option value="kapak">🔧 Kapgjik</option>
-                  </Form.Select>
+                  <Form.Control
+                    type="text"
+                    value={formData.tipiPorosise === 'derë garazhi' ? '🏠 Derë Garazhi' : '🔧 Kapgjik'}
+                    readOnly
+                    className="form-input readonly-field"
+                  />
                 </Form.Group>
               </Col>
             </Row>
@@ -730,7 +776,7 @@ const OrderForm = () => {
                 <Form.Group className="form-group mb-3">
                   <Form.Label className="form-label">
                     <FileText className="me-2" size={16} />
-                    Përshkrimi
+                    Përshkrimi/Shënime
                   </Form.Label>
                   <Form.Control
                     as="textarea"
@@ -768,7 +814,7 @@ const OrderForm = () => {
                     type="number"
                     step="0.01"
                     name="gjatesia"
-                    value={formData.gjatesia}
+                    value={formData.gjatesia || ''}
                     onChange={handleChange}
                     className="form-input"
                     placeholder="Shkruani gjatësinë e derës"
@@ -789,7 +835,7 @@ const OrderForm = () => {
                     type="number"
                     step="0.01"
                     name="gjeresia"
-                    value={formData.gjeresia}
+                    value={formData.gjeresia || ''}
                     onChange={handleChange}
                     className="form-input"
                     placeholder="Shkruani gjerësinë e derës"
@@ -812,7 +858,7 @@ const OrderForm = () => {
                     type="number"
                     step="0.01"
                     name="profiliLarte"
-                    value={formData.profiliLarte}
+                    value={formData.profiliLarte || '0'}
                     onChange={handleChange}
                     className="form-input"
                     placeholder="0"
@@ -833,7 +879,7 @@ const OrderForm = () => {
                     type="number"
                     step="0.01"
                     name="profiliPoshtem"
-                    value={formData.profiliPoshtem}
+                    value={formData.profiliPoshtem || '0'}
                     onChange={handleChange}
                     className="form-input"
                     placeholder="0"
@@ -873,63 +919,24 @@ const OrderForm = () => {
           </Card.Body>
         </Card>
 
-        {/* Status Options Section */}
-        <Card className="form-section mb-4">
-          <Card.Header className="section-header">
-            <div className="d-flex align-items-center">
-              <CheckCircle className="me-2 text-success" size={20} />
-              <h5 className="mb-0">Opsionet e Statusit</h5>
-            </div>
-          </Card.Header>
-          <Card.Body className="section-body">
-            <Row>
-              <Col md={4}>
-                <Form.Group className="form-group mb-3">
-                  <Form.Check
-                    type="checkbox"
-                    label="💰 Pagesa e Përfunduar"
-                    name="isPaymentDone"
-                    checked={formData.isPaymentDone}
-                    onChange={handleChange}
-                    className="custom-checkbox"
-                  />
-                </Form.Group>
-              </Col>
-              
-              <Col md={4}>
-                <Form.Group className="form-group mb-3">
-                  <Form.Check
-                    type="checkbox"
-                    label="🖨️ Është Printuar"
-                    name="eshtePrintuar"
-                    checked={formData.eshtePrintuar}
-                    onChange={handleChange}
-                    className="custom-checkbox"
-                  />
-                </Form.Group>
-              </Col>
-            </Row>
-          </Card.Body>
-        </Card>
-
-        {/* Action Buttons */}
+        {/* Form Actions */}
         <div className="form-actions">
           <Button 
             variant="outline-secondary" 
             className="action-btn cancel-btn me-3" 
-            onClick={() => navigate('/orders')}
-            disabled={loading}
+            onClick={() => navigate('/orders/incomplete')}
+            disabled={saving}
           >
             <X className="me-2" size={16} />
             Anulo
           </Button>
           <Button 
-            variant="primary" 
+            variant="success" 
             type="submit" 
-            disabled={loading || progress < 100}
+            disabled={saving || !formData.cmimiTotal}
             className="action-btn submit-btn"
           >
-            {loading ? (
+            {saving ? (
               <>
                 <div className="spinner-border spinner-border-sm me-2" role="status">
                   <span className="visually-hidden">Loading...</span>
@@ -938,8 +945,8 @@ const OrderForm = () => {
               </>
             ) : (
               <>
-                <Save className="me-2" size={16} />
-                Ruaj Porosinë
+                <CheckCircle className="me-2" size={16} />
+                Kompletoj Porosinë
               </>
             )}
           </Button>
@@ -949,4 +956,4 @@ const OrderForm = () => {
   );
 };
 
-export default OrderForm; 
+export default OrderCompletionForm; 

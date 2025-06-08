@@ -11,9 +11,22 @@ const Payment = sequelize.define('Payment', {
         type: DataTypes.INTEGER,
         allowNull: false
     },
+    sasia: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 1,
+        comment: 'Quantity of products ordered'
+    },
+    cmimiNjesite: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: true,
+        comment: 'Unit price per product'
+    },
     cmimiTotal: {
         type: DataTypes.DECIMAL(10, 2),
-        allowNull: false
+        allowNull: true,
+        defaultValue: 0,
+        comment: 'Total price - can be null for incomplete orders'
     },
     kaparja: {
         type: DataTypes.DECIMAL(10, 2),

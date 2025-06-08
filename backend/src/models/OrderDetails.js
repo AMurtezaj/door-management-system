@@ -11,6 +11,12 @@ const OrderDetails = sequelize.define('OrderDetails', {
         type: DataTypes.INTEGER,
         allowNull: false
     },
+    sasia: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 1,
+        comment: 'Quantity of products ordered'
+    },
     matesi: {
         type: DataTypes.STRING,
         allowNull: true
@@ -72,6 +78,12 @@ const OrderDetails = sequelize.define('OrderDetails', {
         allowNull: true,
         defaultValue: 0,
         comment: 'Profili i poshtëm - zbritet nga gjerësia'
+    },
+    isIncomplete: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+        comment: 'Indicates if this is an incomplete order from measurement-first workflow'
     },
     // Virtual fields for calculated dimensions
     gjatesiaFinale: {
