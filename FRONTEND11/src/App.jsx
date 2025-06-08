@@ -15,6 +15,7 @@ import OrderCompletionForm from './components/orders/OrderCompletionForm';
 import CapacityManagement from './components/orders/CapacityManagement';
 import AdditionalOrdersPage from './components/orders/AdditionalOrdersPage';
 import DebtManagementPage from './pages/DebtManagementPage';
+import ComplaintsPage from './pages/ComplaintsPage';
 import QRVerification from './components/verification/QRVerification';
 import QRScanner from './components/verification/QRScanner';
 import QRDebug from './components/verification/QRDebug';
@@ -48,8 +49,9 @@ const App = () => {
           <Route path="/orders/additional" element={<AdditionalOrdersPage />} />
           <Route path="/orders/capacity" element={<CapacityManagement />} />
           
-          {/* Specialized Order Features */}
+          {/* Specialized Features */}
           <Route path="/debt-management" element={<DebtManagementPage />} />
+          <Route path="/complaints" element={<ComplaintsPage />} />
           
           {/* Notifications */}
           <Route path="/notifications" element={<NotificationsPage />} />

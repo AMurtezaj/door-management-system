@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Table, Badge, Form, InputGroup, Button, Spinner, Alert, Tabs, Tab } from 'react-bootstrap';
-import { Search, CurrencyExchange } from 'react-bootstrap-icons';
+import { Container, Row, Col, Card, Table, Badge, Form, InputGroup, Button, Spinner, Alert, Tabs, Tab, Dropdown } from 'react-bootstrap';
+import { Search, CurrencyExchange, CurrencyEuro } from 'react-bootstrap-icons';
 import { Link } from 'react-router-dom';
-import { getCashDebtOrders, getBankDebtOrders, updatePaymentStatus, getDebtStatistics, getSupplementaryCashDebtOrders, getSupplementaryBankDebtOrders } from '../services/orderService';
-import { updateSupplementaryOrderPaymentStatus } from '../services/supplementaryOrderService';
+import { getCashDebtOrders, getBankDebtOrders, updatePaymentStatus, getDebtStatistics, getSupplementaryCashDebtOrders, getSupplementaryBankDebtOrders, addPartialPayment } from '../services/orderService';
+import { updateSupplementaryOrderPaymentStatus, addPartialPaymentToSupplementaryOrder } from '../services/supplementaryOrderService';
 import { format } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
+import PartialPaymentModal from '../components/payments/PartialPaymentModal';
 
 const DebtManagementPage = () => {
   const [cashDebts, setCashDebts] = useState([]);
@@ -27,6 +28,11 @@ const DebtManagementPage = () => {
     totalDebt: 0
   });
   const { isAuthenticated, refreshAuth, canManagePayments, isManager, canEditOrders } = useAuth();
+
+  // Modal states
+  const [showPartialPaymentModal, setShowPartialPaymentModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [selectedSupplementaryOrder, setSelectedSupplementaryOrder] = useState(null);
 
   // Fetch debt data on component mount and when authentication changes
   useEffect(() => {
@@ -178,6 +184,80 @@ const DebtManagementPage = () => {
     }
   };
 
+  // Handle partial payment
+  const handlePartialPayment = (debt) => {
+    if (debt.isSupplementary) {
+      setSelectedSupplementaryOrder(debt);
+      setSelectedOrder(null);
+    } else {
+      setSelectedOrder(debt);
+      setSelectedSupplementaryOrder(null);
+    }
+    setShowPartialPaymentModal(true);
+  };
+
+  // Handle partial payment success
+  const handlePartialPaymentSuccess = async ({ orderId, paymentAmount, paymentReceiver, isSupplementaryOrder }) => {
+    try {
+      let result;
+      if (isSupplementaryOrder) {
+        result = await addPartialPaymentToSupplementaryOrder(orderId, paymentAmount, paymentReceiver);
+      } else {
+        result = await addPartialPayment(orderId, paymentAmount, paymentReceiver);
+      }
+
+      // Update the appropriate debt list
+      const updateDebtList = (debtsList, setDebtsList) => {
+        setDebtsList(prev => prev.map(debt => {
+          if (debt.id === orderId) {
+            const updatedOrder = isSupplementaryOrder ? result.supplementaryOrder : result.order;
+            const newRemainingDebt = parseFloat(updatedOrder.cmimiTotal) - parseFloat(updatedOrder.kaparja);
+            
+            // If debt is now paid off, remove from debt list
+            if (newRemainingDebt <= 0.01) {
+              return null;
+            }
+            
+            // Update the debt with new payment info
+            return {
+              ...debt,
+              kaparja: updatedOrder.kaparja,
+              isPaymentDone: updatedOrder.isPaymentDone,
+              pagesaMbetur: isSupplementaryOrder ? updatedOrder.pagesaMbetur : newRemainingDebt
+            };
+          }
+          return debt;
+        }).filter(Boolean)); // Remove null entries (paid debts)
+      };
+
+      // Determine which debt type this order belongs to
+      const debtType = selectedOrder?.menyraPageses || selectedSupplementaryOrder?.menyraPageses;
+      
+      if (debtType === 'kesh') {
+        if (isSupplementaryOrder) {
+          updateDebtList(suppCashDebts, setSuppCashDebts);
+        } else {
+          updateDebtList(cashDebts, setCashDebts);
+        }
+      } else {
+        if (isSupplementaryOrder) {
+          updateDebtList(suppBankDebts, setSuppBankDebts);
+        } else {
+          updateDebtList(bankDebts, setBankDebts);
+        }
+      }
+
+      // Refresh statistics
+      fetchDebtStatistics();
+      setShowPartialPaymentModal(false);
+      setSelectedOrder(null);
+      setSelectedSupplementaryOrder(null);
+
+    } catch (err) {
+      throw err; // Let the modal handle the error display
+    }
+  };
+
   // Filter debts based on search term
   const filterDebts = (debts) => {
     if (!searchTerm) return debts;
@@ -206,7 +286,8 @@ const DebtManagementPage = () => {
         cmimiTotal: suppDebt.cmimiTotal,
         kaparja: suppDebt.kaparja,
         tipiPorosise: 'Porosi Shtesë',
-        dita: suppDebt.ParentOrder?.OrderDetails?.dita || suppDebt.createdAt
+        dita: suppDebt.ParentOrder?.OrderDetails?.dita || suppDebt.createdAt,
+        menyraPageses: suppDebt.menyraPageses
       }))
     ];
     
@@ -284,13 +365,22 @@ const DebtManagementPage = () => {
                 <td>
                   <div className="d-flex gap-2">
                     {canManagePayments ? (
-                      <Button 
-                        variant="success" 
-                        size="sm" 
-                        onClick={() => handleMarkAsPaid(debt.id, debtType, debt.isSupplementary)}
-                      >
-                        Paguaj
-                      </Button>
+                      <Dropdown>
+                        <Dropdown.Toggle variant="success" size="sm">
+                          <CurrencyEuro className="me-1" size={14} />
+                          Paguaj
+                        </Dropdown.Toggle>
+                        <Dropdown.Menu>
+                          <Dropdown.Item onClick={() => handlePartialPayment(debt)}>
+                            <CurrencyEuro className="me-2" size={14} />
+                            Pagesë Pjesore
+                          </Dropdown.Item>
+                          <Dropdown.Item onClick={() => handleMarkAsPaid(debt.id, debtType, debt.isSupplementary)}>
+                            <CurrencyEuro className="me-2" size={14} />
+                            Shëno si të Paguar
+                          </Dropdown.Item>
+                        </Dropdown.Menu>
+                      </Dropdown>
                     ) : (
                       <Button 
                         variant="success" 
@@ -501,6 +591,19 @@ const DebtManagementPage = () => {
           </Tabs>
         </Card.Body>
       </Card>
+
+      {/* Partial Payment Modal */}
+      <PartialPaymentModal
+        show={showPartialPaymentModal}
+        onHide={() => {
+          setShowPartialPaymentModal(false);
+          setSelectedOrder(null);
+          setSelectedSupplementaryOrder(null);
+        }}
+        order={selectedOrder}
+        supplementaryOrder={selectedSupplementaryOrder}
+        onPaymentSuccess={handlePartialPaymentSuccess}
+      />
     </Container>
   );
 };

@@ -5,6 +5,10 @@ const Payment = require('./Payment');
 const OrderDetails = require('./OrderDetails');
 const Notification = require('./Notification');
 const SupplementaryOrder = require('./SupplementaryOrder');
+const Complaint = require('./Complaint');
+
+// Initialize models
+const ComplaintModel = Complaint(sequelize);
 
 // Order to Customer relationship (many-to-one)
 Order.belongsTo(Customer, { foreignKey: 'customerId' });
@@ -33,5 +37,6 @@ module.exports = {
     Payment,
     OrderDetails,
     Notification,
-    SupplementaryOrder
+    SupplementaryOrder,
+    Complaint: ComplaintModel
 }; 

@@ -17,7 +17,8 @@ import {
   Rulers,
   PlusSquare,
   List,
-  Clock
+  Clock,
+  ExclamationTriangle
 } from 'react-bootstrap-icons';
 import './Sidebar.css';
 
@@ -67,6 +68,12 @@ const Sidebar = ({ show, onHide }) => {
       path: '/debt-management',
       label: 'Menaxhimi i Borxheve',
       icon: <CurrencyExchange size={20} />,
+      roles: ['admin', 'menaxher']
+    },
+    {
+      path: '/complaints',
+      label: 'Ankesat',
+      icon: <ExclamationTriangle size={20} />,
       roles: ['admin', 'menaxher']
     },
     {
