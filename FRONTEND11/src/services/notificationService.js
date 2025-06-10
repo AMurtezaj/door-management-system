@@ -262,4 +262,72 @@ export const getAllNotificationsWithLocal = async () => {
       return [];
     }
   }
+};
+
+// ====== SCHEDULED NOTIFICATION FUNCTIONS ======
+
+// Get status of scheduled notification jobs
+export const getScheduledJobsStatus = async () => {
+  try {
+    const response = await api.get('/notifications/scheduled/status');
+    return response.data;
+  } catch (error) {
+    console.error('Error getting scheduled jobs status:', error);
+    throw error;
+  }
+};
+
+// Manually trigger overdue orders check
+export const triggerOverdueCheck = async () => {
+  try {
+    const response = await api.post('/notifications/scheduled/trigger/overdue');
+    return response.data;
+  } catch (error) {
+    console.error('Error triggering overdue check:', error);
+    throw error;
+  }
+};
+
+// Manually trigger monthly debt report
+export const triggerDebtReport = async () => {
+  try {
+    const response = await api.post('/notifications/scheduled/trigger/debt-report');
+    return response.data;
+  } catch (error) {
+    console.error('Error triggering debt report:', error);
+    throw error;
+  }
+};
+
+// Initialize scheduled notification service
+export const initializeScheduledService = async () => {
+  try {
+    const response = await api.post('/notifications/scheduled/initialize');
+    return response.data;
+  } catch (error) {
+    console.error('Error initializing scheduled service:', error);
+    throw error;
+  }
+};
+
+// Start all scheduled jobs
+export const startScheduledJobs = async () => {
+  try {
+    const response = await api.post('/notifications/scheduled/start');
+    return response.data;
+  } catch (error) {
+    console.error('Error starting scheduled jobs:', error);
+    throw error;
+  }
+};
+
+// Stop all scheduled jobs
+export const stopScheduledJobs = async () => {
+  try {
+    const response = await api.post('/notifications/scheduled/stop');
+    return response.data;
+  } catch (error) {
+    console.error('Error stopping scheduled jobs:', error);
+    throw error;
+  }
 }; 

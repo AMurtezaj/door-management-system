@@ -53,7 +53,7 @@ const App = () => {
           <Route path="/debt-management" element={<DebtManagementPage />} />
           <Route path="/complaints" element={<ComplaintsPage />} />
           
-          {/* Notifications */}
+          {/* Notifications with Integrated System Management */}
           <Route path="/notifications" element={<NotificationsPage />} />
           
           {/* User Profile (all users) */}

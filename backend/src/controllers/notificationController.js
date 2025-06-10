@@ -3,6 +3,7 @@ const Order = require('../models/Order');
 const Customer = require('../models/Customer');
 const Payment = require('../models/Payment');
 const OrderDetails = require('../models/OrderDetails');
+const notificationService = require('../services/notificationService');
 
 const notificationController = {
     // Get all notifications
@@ -138,6 +139,89 @@ const notificationController = {
             }
         } catch (error) {
             console.error('Error creating notification:', error);
+        }
+    },
+
+    // ====== SCHEDULED NOTIFICATION ENDPOINTS ======
+
+    // Get status of scheduled notification jobs
+    getScheduledJobsStatus: async (req, res) => {
+        try {
+            const status = notificationService.getScheduledJobsStatus();
+            res.json(status);
+        } catch (error) {
+            console.error('Error getting scheduled jobs status:', error);
+            res.status(500).json({ message: 'Gabim gjatë marrjes së statusit të punëve të planifikuara' });
+        }
+    },
+
+    // Manually trigger overdue orders check
+    triggerOverdueCheck: async (req, res) => {
+        try {
+            await notificationService.triggerOverdueCheck();
+            res.json({ 
+                success: true, 
+                message: 'Kontrolli i porosive të vonuara u aktivizua me sukses' 
+            });
+        } catch (error) {
+            console.error('Error triggering overdue check:', error);
+            res.status(500).json({ message: 'Gabim gjatë aktivizimit të kontrollit të porosive të vonuara' });
+        }
+    },
+
+    // Manually trigger monthly debt report
+    triggerDebtReport: async (req, res) => {
+        try {
+            await notificationService.triggerDebtReport();
+            res.json({ 
+                success: true, 
+                message: 'Raporti mujor i borxheve u gjenerua me sukses' 
+            });
+        } catch (error) {
+            console.error('Error triggering debt report:', error);
+            res.status(500).json({ message: 'Gabim gjatë gjenerimit të raportit mujor të borxheve' });
+        }
+    },
+
+    // Initialize scheduled notification jobs
+    initializeScheduledJobs: async (req, res) => {
+        try {
+            notificationService.initializeScheduledJobs();
+            res.json({ 
+                success: true, 
+                message: 'Sistemi i njoftimeve të planifikuara u inicializua me sukses' 
+            });
+        } catch (error) {
+            console.error('Error initializing scheduled jobs:', error);
+            res.status(500).json({ message: 'Gabim gjatë inicializimit të sistemit të njoftimeve' });
+        }
+    },
+
+    // Start all scheduled jobs
+    startScheduledJobs: async (req, res) => {
+        try {
+            notificationService.startScheduledJobs();
+            res.json({ 
+                success: true, 
+                message: 'Të gjitha punet e planifikuara u nisën me sukses' 
+            });
+        } catch (error) {
+            console.error('Error starting scheduled jobs:', error);
+            res.status(500).json({ message: 'Gabim gjatë nisjes së punëve të planifikuara' });
+        }
+    },
+
+    // Stop all scheduled jobs
+    stopScheduledJobs: async (req, res) => {
+        try {
+            notificationService.stopScheduledJobs();
+            res.json({ 
+                success: true, 
+                message: 'Të gjitha punet e planifikuara u ndalën me sukses' 
+            });
+        } catch (error) {
+            console.error('Error stopping scheduled jobs:', error);
+            res.status(500).json({ message: 'Gabim gjatë ndaljes së punëve të planifikuara' });
         }
     }
 };

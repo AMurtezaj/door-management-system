@@ -42,7 +42,7 @@ const Sidebar = ({ show, onHide }) => {
     },
     { 
       path: '/orders/measurement', 
-      label: 'Filloj me Matje', 
+      label: 'Matjet', 
       icon: <Rulers size={20} />, 
       roles: ['admin', 'menaxher'] 
     },

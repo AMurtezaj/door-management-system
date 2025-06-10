@@ -23,4 +23,24 @@ router.patch('/read-all', auth, notificationController.markAllAsRead);
 // Delete notification
 router.delete('/:id', auth, notificationController.deleteNotification);
 
+// ====== SCHEDULED NOTIFICATION ROUTES ======
+
+// Get status of scheduled notification jobs
+router.get('/scheduled/status', auth, notificationController.getScheduledJobsStatus);
+
+// Manually trigger overdue orders check (for testing)
+router.post('/scheduled/trigger/overdue', auth, notificationController.triggerOverdueCheck);
+
+// Manually trigger monthly debt report (for testing)
+router.post('/scheduled/trigger/debt-report', auth, notificationController.triggerDebtReport);
+
+// Initialize scheduled notification jobs
+router.post('/scheduled/initialize', auth, notificationController.initializeScheduledJobs);
+
+// Start all scheduled jobs
+router.post('/scheduled/start', auth, notificationController.startScheduledJobs);
+
+// Stop all scheduled jobs
+router.post('/scheduled/stop', auth, notificationController.stopScheduledJobs);
+
 module.exports = router; 

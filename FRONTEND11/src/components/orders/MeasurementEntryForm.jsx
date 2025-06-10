@@ -85,6 +85,36 @@ const MeasurementEntryForm = () => {
     fetchCapacities();
   }, []);
 
+  // Calculate total price when unit price or quantity changes
+  useEffect(() => {
+    if (formData.cmimiNjesite && formData.sasia) {
+      const unitPrice = parseFloat(formData.cmimiNjesite);
+      const quantity = parseInt(formData.sasia);
+      if (!isNaN(unitPrice) && !isNaN(quantity) && unitPrice > 0 && quantity > 0) {
+        const totalPrice = (unitPrice * quantity).toFixed(2);
+        setFormData(prev => ({
+          ...prev,
+          cmimiTotal: totalPrice
+        }));
+      }
+    }
+  }, [formData.cmimiNjesite, formData.sasia]);
+
+  // Calculate unit price when total price or quantity changes (if unit price is empty)
+  useEffect(() => {
+    if (formData.cmimiTotal && formData.sasia && !formData.cmimiNjesite) {
+      const totalPrice = parseFloat(formData.cmimiTotal);
+      const quantity = parseInt(formData.sasia);
+      if (!isNaN(totalPrice) && !isNaN(quantity) && totalPrice > 0 && quantity > 0) {
+        const unitPrice = (totalPrice / quantity).toFixed(2);
+        setFormData(prev => ({
+          ...prev,
+          cmimiNjesite: unitPrice
+        }));
+      }
+    }
+  }, [formData.cmimiTotal, formData.sasia]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -472,7 +502,7 @@ const MeasurementEntryForm = () => {
                     placeholder="0.00"
                   />
                   <Form.Text className="text-muted">
-                    Mund të shtohet më vonë
+                    Çmimi për një produkt
                   </Form.Text>
                 </Form.Group>
               </Col>
@@ -493,7 +523,10 @@ const MeasurementEntryForm = () => {
                     placeholder="0.00"
                   />
                   <Form.Text className="text-muted">
-                    Mund të shtohet më vonë
+                    {formData.sasia && formData.cmimiNjesite ? 
+                      `${formData.sasia} × ${formData.cmimiNjesite} €` : 
+                      'Mund të shtohet më vonë'
+                    }
                   </Form.Text>
                 </Form.Group>
               </Col>

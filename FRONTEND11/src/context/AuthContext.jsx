@@ -154,8 +154,11 @@ export const AuthProvider = ({ children }) => {
   // Helper to check if user is manager
   const isManager = user?.roli === 'menaxher';
   
-  // Helper to check if user can edit/delete orders (only admin)
-  const canEditOrders = isAdmin;
+  // Helper to check if user can edit/delete orders (both admin and manager can edit, but with different permissions)
+  const canEditOrders = isAdmin || isManager;
+  
+  // Helper to check if user can delete orders (only admin)
+  const canDeleteOrders = isAdmin;
   
   // Helper to check if user can manage payments (only admin)
   const canManagePayments = isAdmin;
@@ -165,6 +168,9 @@ export const AuthProvider = ({ children }) => {
   
   // Helper to check if user can manage users (only admin)
   const canManageUsers = isAdmin;
+
+  // Helper to check if user can manage complaints (both admin and manager)
+  const canManageComplaints = isAdmin || isManager;
 
   return (
     <AuthContext.Provider
@@ -179,9 +185,11 @@ export const AuthProvider = ({ children }) => {
         isAdmin,
         isManager,
         canEditOrders,
+        canDeleteOrders,
         canManagePayments,
         canManageCapacities,
-        canManageUsers
+        canManageUsers,
+        canManageComplaints
       }}
     >
       {children}

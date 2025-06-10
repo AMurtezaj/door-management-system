@@ -10,7 +10,7 @@ import { useAuth } from '../../context/AuthContext';
 import PartialPaymentModal from '../payments/PartialPaymentModal';
 
 const SupplementaryOrdersList = ({ parentOrderId, onUpdate }) => {
-  const { canManagePayments, canEditOrders, isManager } = useAuth();
+  const { canManagePayments, canEditOrders, canDeleteOrders, isManager } = useAuth();
   const [supplementaryOrders, setSupplementaryOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -303,7 +303,7 @@ const SupplementaryOrdersList = ({ parentOrderId, onUpdate }) => {
                         </Button>
                       )}
                       
-                      {canEditOrders && (
+                      {canDeleteOrders && (
                         <Button 
                           variant="danger" 
                           size="sm" 
@@ -316,9 +316,9 @@ const SupplementaryOrdersList = ({ parentOrderId, onUpdate }) => {
                         </Button>
                       )}
                       
-                      {isManager && !canEditOrders && (
+                      {isManager && !canDeleteOrders && (
                         <small className="text-muted align-self-center">
-                          Vetëm shikimi
+                          Editim i kufizuar
                         </small>
                       )}
                     </div>

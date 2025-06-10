@@ -3,6 +3,7 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const { connectPostgres, sequelize } = require("./config/database");
 const { sequelize: dbModels } = require('./models');
+const notificationService = require('./services/notificationService');
 
 dotenv.config();
 
@@ -51,16 +52,34 @@ const startServer = async () => {
     // Sync models with database
     await dbModels.sync();
     
+    // Initialize scheduled notification jobs
+    console.log('🔔 Initializing scheduled notification system...');
+    notificationService.initializeScheduledJobs();
+    
     app.listen(PORT, '0.0.0.0', () => {
       console.log(`✅ Backend Server running on http://0.0.0.0:${PORT}`);
       console.log(`📱 Local access: http://localhost:${PORT}`);
       console.log(`🌐 Network access: http://[YOUR_IP_ADDRESS]:${PORT}`);
       console.log(`💡 Find your IP address with: ipconfig (Windows) or ifconfig (Mac/Linux)`);
+      console.log(`🔔 Scheduled notifications active: ${notificationService.isScheduledInitialized ? 'YES' : 'NO'}`);
     });
   } catch (error) {
     console.error("Unable to start server:", error);
     process.exit(1);
   }
 };
+
+// Handle graceful shutdown
+process.on('SIGINT', () => {
+  console.log('🛑 Received SIGINT. Gracefully shutting down...');
+  notificationService.stopScheduledJobs();
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  console.log('🛑 Received SIGTERM. Gracefully shutting down...');
+  notificationService.stopScheduledJobs();
+  process.exit(0);
+});
 
 startServer();

@@ -21,7 +21,7 @@ const ComplaintsPage = () => {
   const [newComplaintText, setNewComplaintText] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const { canEditOrders } = useAuth();
+  const { canEditOrders, isAdmin, isManager, canManageComplaints } = useAuth();
 
   // Fetch data on component mount
   useEffect(() => {
@@ -186,7 +186,7 @@ const ComplaintsPage = () => {
           <Button variant="outline-primary" onClick={fetchData}>
             <i className="bi bi-arrow-clockwise me-1"></i> Rifresko
           </Button>
-          {canEditOrders && (
+          {canManageComplaints && (
             <Button variant="primary" onClick={() => setShowAddModal(true)}>
               <Plus className="me-1" size={16} />
               Shto Ankesë të Re
@@ -305,7 +305,7 @@ const ComplaintsPage = () => {
                     </td>
                     <td>
                       <div className="d-flex gap-1 align-items-center">
-                        {canEditOrders ? (
+                        {canManageComplaints ? (
                           <>
                             <Button
                               variant={complaint.statusi === 'E kryer' ? 'outline-warning' : 'outline-success'}

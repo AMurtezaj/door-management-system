@@ -27,7 +27,7 @@ const OrderList = () => {
   const [customEndDate, setCustomEndDate] = useState('');
   const [sortOrder, setSortOrder] = useState('asc');
   
-  const { isAuthenticated, refreshAuth, canEditOrders, canManagePayments, isManager } = useAuth();
+  const { isAuthenticated, refreshAuth, canEditOrders, canDeleteOrders, canManagePayments, isManager } = useAuth();
   
   // Print invoice state
   const [showPrintModal, setShowPrintModal] = useState(false);
@@ -464,7 +464,7 @@ const OrderList = () => {
       
       {isManager && (
         <Alert variant="info" className="mb-4">
-          <strong>Njoftim për Menaxherin:</strong> Ju mund të shikoni të gjitha porositë dhe të shtoni porosi të reja, por nuk mund të editoni, fshini, ose menaxhoni pagesat e porosive ekzistuese. Këto veprime janë të rezervuara vetëm për administratorin.
+          <strong>Njoftim për Menaxherin:</strong> Ju mund të shikoni të gjitha porositë dhe të shtoni/editoni porosi, por nuk mund të fshini porosi ose menaxhoni pagesat. Këto veprime janë të rezervuara vetëm për administratorin.
         </Alert>
       )}
       
@@ -645,15 +645,15 @@ const OrderList = () => {
                     <i className="bi bi-printer"></i> {order.eshtePrintuar ? "Printo Përsëri" : "Printo Faturën"}
                   </Button>
                   
-                  {canEditOrders && (
+                  {canDeleteOrders && (
                     <Button variant="danger" size="sm" onClick={() => handleDelete(order.id)}>
                       Fshi
                     </Button>
                   )}
                   
-                  {isManager && !canEditOrders && (
+                  {isManager && (
                     <small className="text-muted align-self-center">
-                      Vetëm shikimi
+                      {!canDeleteOrders && !canManagePayments ? 'Editim i kufizuar' : ''}
                     </small>
                   )}
                 </div>

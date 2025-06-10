@@ -27,11 +27,13 @@ import { sq } from 'date-fns/locale';
 import { getOrderById, updateOrder } from '../../services/orderService';
 import { getAllCapacities } from '../../services/capacityService';
 import useOrderManagement from '../../hooks/useOrderManagement';
+import { useAuth } from '../../context/AuthContext';
 import './OrderForm.css';
 
 const OrderEdit = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { isAdmin, isManager } = useAuth();
   const [capacities, setCapacities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -390,6 +392,13 @@ const OrderEdit = () => {
         </Alert>
       )}
       
+      {isManager && (
+        <Alert variant="info" className="modern-alert mb-4">
+          <InfoCircle className="me-2" size={16} />
+          <strong>Njoftim për Menaxherin:</strong> Ju mund të editoni të gjitha informacionet e porosisë përveç të dhënave financiare. Informacionet financiare janë të rezervuara vetëm për administratorët.
+        </Alert>
+      )}
+      
       <Form onSubmit={handleSubmit} className="modern-form">
         {/* Customer Information Section */}
         <Card className="form-section mb-4">
@@ -569,8 +578,20 @@ const OrderEdit = () => {
               <CurrencyEuro className="me-2 text-warning" size={20} />
               <h5 className="mb-0">Informacionet Financiare</h5>
             </div>
+            {isManager && (
+              <small className="text-muted">
+                <InfoCircle className="me-1" size={12} />
+                Vetëm administratorët mund të editojnë informacionet financiare
+              </small>
+            )}
           </Card.Header>
           <Card.Body className="section-body">
+            {isManager && (
+              <Alert variant="info" className="mb-3">
+                <InfoCircle className="me-2" size={16} />
+                <strong>Njoftim për Menaxherin:</strong> Këto fusha janë vetëm për lexim. Vetëm administratorët mund të modifikojnë informacionet financiare.
+              </Alert>
+            )}
             <Row>
               <Col md={4}>
                 <Form.Group className="form-group mb-3">
@@ -584,9 +605,10 @@ const OrderEdit = () => {
                     name="cmimiTotal"
                     value={formData.cmimiTotal}
                     onChange={handleChange}
-                    className="form-input"
+                    className={`form-input ${isManager ? 'bg-light' : ''}`}
                     placeholder="0.00"
                     required
+                    readOnly={isManager}
                   />
                 </Form.Group>
               </Col>
@@ -603,8 +625,9 @@ const OrderEdit = () => {
                     name="kaparja"
                     value={formData.kaparja}
                     onChange={handleChange}
-                    className="form-input"
+                    className={`form-input ${isManager ? 'bg-light' : ''}`}
                     placeholder="0.00"
+                    readOnly={isManager}
                   />
                 </Form.Group>
               </Col>
@@ -620,7 +643,7 @@ const OrderEdit = () => {
                     step="0.01"
                     value={pagesaMbetur.toFixed(2)}
                     readOnly
-                    className="form-input calculated-field"
+                    className="form-input calculated-field bg-light"
                   />
                 </Form.Group>
               </Col>
@@ -638,8 +661,9 @@ const OrderEdit = () => {
                     name="kaparaReceiver"
                     value={formData.kaparaReceiver || ''}
                     onChange={handleChange}
-                    className="form-input"
+                    className={`form-input ${isManager ? 'bg-light' : ''}`}
                     placeholder="Emri i personit që mori kaparën"
+                    readOnly={isManager}
                   />
                 </Form.Group>
               </Col>
@@ -654,8 +678,9 @@ const OrderEdit = () => {
                     name="menyraPageses"
                     value={formData.menyraPageses}
                     onChange={handleChange}
-                    className="form-input"
+                    className={`form-input ${isManager ? 'bg-light' : ''}`}
                     required
+                    disabled={isManager}
                   >
                     <option value="kesh">💵 Kesh</option>
                     <option value="banke">🏦 Bankë</option>
