@@ -105,7 +105,7 @@ async function comprehensiveSeedData() {
     }
 
     // Order types according to existing model
-    const orderTypes = ['derë garazhi', 'kapak', 'derë dhome'];
+    const orderTypes = ['derë garazhi', 'kapak', 'derë dhome', 'derë garazhi + kapak'];
     const sellers = ['Agron Krasniqi', 'Fatmir Berisha', 'Valdrin Mustafa', 'Driton Hoxha', 'Blerton Sadiku'];
     const measurers = ['Besnik Matesi', 'Flamur Tekniku', 'Mentor Specialist'];
     const installers = ['Trim Montues', 'Ermal Tekniku', 'Fisnik Specialist'];
@@ -145,10 +145,11 @@ async function comprehensiveSeedData() {
     for (const order of createdOrders) {
       const isGarageDoor = order.tipiPorosise === 'derë garazhi';
       const isKapak = order.tipiPorosise === 'kapak';
+      const isCombined = order.tipiPorosise === 'derë garazhi + kapak';
       
       // Dimensions based on order type
       let gjatesia, gjeresia;
-      if (isGarageDoor) {
+      if (isGarageDoor || isCombined) {
         gjatesia = Math.floor(Math.random() * 200) + 250; // 250-449 cm
         gjeresia = Math.floor(Math.random() * 100) + 200; // 200-299 cm
       } else if (isKapak) {
@@ -194,11 +195,14 @@ async function comprehensiveSeedData() {
     for (const order of createdOrders) {
       const isGarageDoor = order.tipiPorosise === 'derë garazhi';
       const isKapak = order.tipiPorosise === 'kapak';
+      const isCombined = order.tipiPorosise === 'derë garazhi + kapak';
       
       // Price ranges based on order type
       let cmimiTotal;
       if (isGarageDoor) {
         cmimiTotal = Math.floor(Math.random() * 300) + 400; // 400-699 EUR
+      } else if (isCombined) {
+        cmimiTotal = Math.floor(Math.random() * 400) + 600; // 600-999 EUR (higher for combined)
       } else if (isKapak) {
         cmimiTotal = Math.floor(Math.random() * 200) + 150; // 150-349 EUR
       } else { // derë dhome
@@ -228,7 +232,9 @@ async function comprehensiveSeedData() {
     // Create supplementary orders for some garage door orders
     console.log('📄 Creating supplementary orders...');
     
-    const garageDoorOrders = createdOrders.filter(order => order.tipiPorosise === 'derë garazhi');
+    const garageDoorOrders = createdOrders.filter(order => 
+      order.tipiPorosise === 'derë garazhi' || order.tipiPorosise === 'derë garazhi + kapak'
+    );
     const supplementaryCount = Math.min(8, garageDoorOrders.length); // Max 8 supplementary orders
     
     for (let i = 0; i < supplementaryCount; i++) {
@@ -292,7 +298,9 @@ async function comprehensiveSeedData() {
 
     console.log('\n🏷️  ORDER TYPE DISTRIBUTION:');
     Object.entries(orderTypeCounts).forEach(([type, count]) => {
-      const emoji = type === 'derë garazhi' ? '🚪' : type === 'kapak' ? '🏠' : '🚪';
+      const emoji = type === 'derë garazhi' ? '🚪' : 
+                   type === 'kapak' ? '🏠' : 
+                   type === 'derë garazhi + kapak' ? '🚪🏠' : '🚪';
       console.log(`  ${emoji} ${type}: ${count} orders`);
     });
 

@@ -422,11 +422,12 @@ const MeasurementEntryForm = () => {
                     name="tipiPorosise"
                     value={formData.tipiPorosise}
                     onChange={handleChange}
-                    className="form-input"
                     required
+                    className="form-control"
                   >
                     <option value="derë garazhi">🏠 Derë Garazhi</option>
                     <option value="kapak">🔧 Kapgjik</option>
+                    <option value="derë garazhi + kapak">🏠🔧 Derë Garazhi + Kapgjik</option>
                   </Form.Select>
                 </Form.Group>
               </Col>

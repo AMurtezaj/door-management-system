@@ -77,11 +77,20 @@ const orderController = {
                         return res.status(400).json({ message: 'Nuk ka kapacitet për kapakë për këtë ditë!' });
                     }
 
+                    if (tipiPorosise === 'derë garazhi + kapak' && (capacity.dyerGarazhi <= 0 || capacity.kapake <= 0)) {
+                        return res.status(400).json({ message: 'Nuk ka kapacitet të mjaftueshëm për derë garazhi + kapak për këtë ditë!' });
+                    }
+
                     // Update capacity only for complete orders
                     if (tipiPorosise === 'derë garazhi') {
                         await capacity.update({ dyerGarazhi: capacity.dyerGarazhi - 1 });
                     } else if (tipiPorosise === 'kapak') {
                         await capacity.update({ kapake: capacity.kapake - 1 });
+                    } else if (tipiPorosise === 'derë garazhi + kapak') {
+                        await capacity.update({ 
+                            dyerGarazhi: capacity.dyerGarazhi - 1,
+                            kapake: capacity.kapake - 1 
+                        });
                     }
                 }
 

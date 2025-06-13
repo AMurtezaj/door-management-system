@@ -75,7 +75,7 @@ const QRVerification = () => {
     }
     
     // Check for required fields with more flexibility
-    const hasDocumentType = data.documentType === 'INVOICE';
+    const hasDocumentType = data.documentType === 'INVOICE' || data.documentType === 'SUPPLEMENTARY_INVOICE';
     const hasCompanyName = data.companyName && data.companyName.includes('LindDoors');
     const hasOrderDetails = data.orderDetails && data.orderDetails.orderId;
     
@@ -212,24 +212,66 @@ const QRVerification = () => {
               <h6>Document Information</h6>
               <p>
                 <strong>Type:</strong> {qrData.documentType}<br />
-                <strong>Version:</strong> {qrData.documentVersion}<br />
                 <strong>QR Version:</strong> {qrData.metadata?.qrVersion}
               </p>
             </Col>
             <Col md={6}>
-              <h6>Security Level</h6>
+              <h6>Verification</h6>
               <Badge bg="success" className="me-2">
                 <Shield className="me-1" />
-                {qrData.security?.securityLevel}
+                Verified
               </Badge>
               <Badge bg="info">
                 <Award className="me-1" />
-                Anti-Counterfeit Protected
+                Authentic Document
               </Badge>
             </Col>
           </Row>
         </Card.Body>
       </Card>
+
+      {/* Parent Order Information (for supplementary invoices) */}
+      {qrData.documentType === 'SUPPLEMENTARY_INVOICE' && qrData.parentOrder && (
+        <Card className="mb-4 shadow-sm">
+          <Card.Header className="bg-primary text-white">
+            <h5 className="mb-0">
+              <FileText className="me-2" />
+              🔗 Parent Order Information
+            </h5>
+          </Card.Header>
+          <Card.Body>
+            <Alert variant="info" className="mb-3">
+              <strong>This is a supplementary order</strong> connected to the main order below.
+            </Alert>
+            <Row>
+              <Col md={6}>
+                <Table borderless size="sm">
+                  <tbody>
+                    <tr>
+                      <td><strong>Parent Order ID:</strong></td>
+                      <td>#{qrData.parentOrder.id}</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Parent Order Type:</strong></td>
+                      <td>{qrData.parentOrder.type}</td>
+                    </tr>
+                  </tbody>
+                </Table>
+              </Col>
+              <Col md={6}>
+                <Table borderless size="sm">
+                  <tbody>
+                    <tr>
+                      <td><strong>Delivery Date:</strong></td>
+                      <td>{qrData.parentOrder.deliveryDate || 'N/A'}</td>
+                    </tr>
+                  </tbody>
+                </Table>
+              </Col>
+            </Row>
+          </Card.Body>
+        </Card>
+      )}
 
       {/* Order Details */}
       <Card className="mb-4 shadow-sm">
@@ -260,10 +302,6 @@ const QRVerification = () => {
                       </Badge>
                     </td>
                   </tr>
-                  <tr>
-                    <td><strong>Order Date:</strong></td>
-                    <td>{qrData.orderDetails?.orderDate || 'N/A'}</td>
-                  </tr>
                 </tbody>
               </Table>
             </Col>
@@ -271,16 +309,8 @@ const QRVerification = () => {
               <Table borderless size="sm">
                 <tbody>
                   <tr>
-                    <td><strong>Measurement Status:</strong></td>
-                    <td>
-                      <Badge bg={qrData.orderDetails?.measurementStatus === 'e matur' ? 'success' : 'warning'}>
-                        {qrData.orderDetails?.measurementStatus}
-                      </Badge>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td><strong>Measurement Date:</strong></td>
-                    <td>{qrData.orderDetails?.measurementDate || 'N/A'}</td>
+                    <td><strong>Order Date:</strong></td>
+                    <td>{qrData.orderDetails?.orderDate || 'N/A'}</td>
                   </tr>
                   <tr>
                     <td><strong>Description:</strong></td>
@@ -366,10 +396,6 @@ const QRVerification = () => {
               <Table borderless size="sm">
                 <tbody>
                   <tr>
-                    <td><strong>Payment Method:</strong></td>
-                    <td>{qrData.financial?.paymentMethod}</td>
-                  </tr>
-                  <tr>
                     <td><strong>Payment Completed:</strong></td>
                     <td>
                       <Badge bg={qrData.financial?.paymentCompleted === 'Po' ? 'success' : 'danger'}>
@@ -377,10 +403,6 @@ const QRVerification = () => {
                       </Badge>
                     </td>
                   </tr>
-                  <tr>
-                    <td><strong>Down Payment Receiver:</strong></td>
-                    <td>{qrData.financial?.downPaymentReceiver}</td>
-                  </tr>
                 </tbody>
               </Table>
             </Col>
@@ -388,117 +410,13 @@ const QRVerification = () => {
         </Card.Body>
       </Card>
 
-      {/* Print Information */}
-      <Card className="mb-4 shadow-sm">
-        <Card.Header className="bg-secondary text-white">
-          <h5 className="mb-0">
-            <Clock className="me-2" />
-            Print Authentication
-          </h5>
-        </Card.Header>
-        <Card.Body>
-          <Row>
-            <Col md={6}>
-              <Table borderless size="sm">
-                <tbody>
-                  <tr>
-                    <td><strong>Printed By:</strong></td>
-                    <td>{qrData.printInfo?.printedBy}</td>
-                  </tr>
-                  <tr>
-                    <td><strong>User Role:</strong></td>
-                    <td>
-                      <Badge bg="primary">{qrData.printInfo?.userRole}</Badge>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td><strong>Print Date:</strong></td>
-                    <td>{qrData.printInfo?.printDate}</td>
-                  </tr>
-                </tbody>
-              </Table>
-            </Col>
-            <Col md={6}>
-              <Table borderless size="sm">
-                <tbody>
-                  <tr>
-                    <td><strong>Print Time:</strong></td>
-                    <td>{qrData.printInfo?.printTime}</td>
-                  </tr>
-                  <tr>
-                    <td><strong>Timezone:</strong></td>
-                    <td>{qrData.printInfo?.timezone}</td>
-                  </tr>
-                  <tr>
-                    <td><strong>Generated:</strong></td>
-                    <td>{formatDate(qrData.metadata?.generatedAt)}</td>
-                  </tr>
-                </tbody>
-              </Table>
-            </Col>
-          </Row>
-        </Card.Body>
-      </Card>
-
-      {/* Security Information */}
-      <Card className="mb-4 shadow-sm">
-        <Card.Header className="bg-danger text-white">
-          <h5 className="mb-0">
-            <Shield className="me-2" />
-            Security & Verification
-          </h5>
-        </Card.Header>
-        <Card.Body>
-          <Row>
-            <Col md={6}>
-              <h6>Verification Codes</h6>
-              <Table borderless size="sm">
-                <tbody>
-                  <tr>
-                    <td><strong>Verification Hash:</strong></td>
-                    <td><code>{qrData.security?.verificationHash}</code></td>
-                  </tr>
-                  <tr>
-                    <td><strong>Authenticity Token:</strong></td>
-                    <td><code>{qrData.security?.authenticityToken}</code></td>
-                  </tr>
-                  <tr>
-                    <td><strong>Magic Number:</strong></td>
-                    <td><Badge bg="success">{qrData.verification?.magicNumber}</Badge></td>
-                  </tr>
-                </tbody>
-              </Table>
-            </Col>
-            <Col md={6}>
-              <h6>Anti-Counterfeit Features</h6>
-              <Table borderless size="sm">
-                <tbody>
-                  <tr>
-                    <td><strong>Checksum:</strong></td>
-                    <td>{qrData.verification?.checksumDigit}</td>
-                  </tr>
-                  <tr>
-                    <td><strong>Pattern Code:</strong></td>
-                    <td><code>{qrData.verification?.patternCode}</code></td>
-                  </tr>
-                  <tr>
-                    <td><strong>Unique Signature:</strong></td>
-                    <td><code>{qrData.verification?.uniqueSignature}</code></td>
-                  </tr>
-                </tbody>
-              </Table>
-            </Col>
-          </Row>
-        </Card.Body>
-      </Card>
-
-      {/* Dimensions (if available) */}
-      {qrData.dimensions && (
+      {/* Verification Information */}
+      {qrData.verification && (
         <Card className="mb-4 shadow-sm">
-          <Card.Header className="bg-info text-white">
+          <Card.Header className="bg-secondary text-white">
             <h5 className="mb-0">
-              <Eye className="me-2" />
-              Dimensions
+              <Shield className="me-2" />
+              Verification
             </h5>
           </Card.Header>
           <Card.Body>
@@ -507,12 +425,8 @@ const QRVerification = () => {
                 <Table borderless size="sm">
                   <tbody>
                     <tr>
-                      <td><strong>Length:</strong></td>
-                      <td>{qrData.dimensions.length} cm</td>
-                    </tr>
-                    <tr>
-                      <td><strong>Width:</strong></td>
-                      <td>{qrData.dimensions.width} cm</td>
+                      <td><strong>Verification Code:</strong></td>
+                      <td><code>{qrData.verification.code}</code></td>
                     </tr>
                   </tbody>
                 </Table>
@@ -521,12 +435,8 @@ const QRVerification = () => {
                 <Table borderless size="sm">
                   <tbody>
                     <tr>
-                      <td><strong>Final Length:</strong></td>
-                      <td><strong>{qrData.dimensions.finalLength} cm</strong></td>
-                    </tr>
-                    <tr>
-                      <td><strong>Final Width:</strong></td>
-                      <td><strong>{qrData.dimensions.finalWidth} cm</strong></td>
+                      <td><strong>Generated:</strong></td>
+                      <td>{formatDate(qrData.verification.generatedAt)}</td>
                     </tr>
                   </tbody>
                 </Table>
@@ -540,11 +450,11 @@ const QRVerification = () => {
       <Card className="shadow-sm">
         <Card.Body className="text-center bg-light">
           <p className="mb-2">
-            <strong>Support Contact:</strong> {qrData.metadata?.supportContact}
+            <strong>LindDoors Management System</strong>
           </p>
           <p className="text-muted small mb-0">
-            This document is protected by advanced anti-counterfeiting technology.<br />
-            Expires: {formatDate(qrData.metadata?.expiresAt)}
+            This document has been verified as authentic.<br />
+            For support contact: +383 44 123 456
           </p>
         </Card.Body>
       </Card>

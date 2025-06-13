@@ -128,4 +128,19 @@ export const cancelPartialPaymentFromSupplementaryOrder = async (id, cancellatio
     console.error(`Error cancelling partial payment for supplementary order ${id}:`, error);
     throw new Error(error.response?.data?.message || 'Ka ndodhur një gabim gjatë anulimit të pagesës');
   }
+};
+
+/**
+ * Mark supplementary order as printed
+ * @param {number} id - Supplementary order ID
+ * @returns {Promise} - Promise with updated supplementary order data
+ */
+export const markSupplementaryOrderAsPrinted = async (id) => {
+  try {
+    const response = await api.patch(`/supplementary-orders/${id}/mark-printed`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error marking supplementary order ${id} as printed:`, error);
+    throw new Error(error.response?.data?.message || `Gabim gjatë shënimit të porosisë shtesë ${id} si e printuar`);
+  }
 }; 

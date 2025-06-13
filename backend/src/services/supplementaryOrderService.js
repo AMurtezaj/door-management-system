@@ -36,8 +36,8 @@ const supplementaryOrderService = {
                 throw new Error('Porosia kryesore nuk u gjet!');
             }
 
-            if (parentOrder.tipiPorosise !== 'derë garazhi') {
-                throw new Error('Porositë shtesë mund të bashkëngjiten vetëm me porositë e dyerve të garazhit!');
+            if (parentOrder.tipiPorosise !== 'derë garazhi' && parentOrder.tipiPorosise !== 'derë garazhi + kapak') {
+                throw new Error('Porositë shtesë mund të shtohen vetëm për porositë e dyerve të garazhit ose kombinuara!');
             }
 
             // Validate that the location matches the parent order
@@ -405,6 +405,28 @@ const supplementaryOrderService = {
             console.error('Error cancelling supplementary order partial payment:', error);
             throw error;
         }
+    },
+
+    /**
+     * Mark supplementary order as printed
+     * @param {number} id - Supplementary order ID
+     * @returns {Object} - Updated supplementary order
+     */
+    markAsPrinted: async (id) => {
+        return await sequelize.transaction(async (t) => {
+            const supplementaryOrder = await SupplementaryOrder.findByPk(id, { transaction: t });
+            
+            if (!supplementaryOrder) {
+                throw new Error('Porosia shtesë nuk u gjet!');
+            }
+
+            await supplementaryOrder.update({
+                eshtePrintuar: true,
+                dataPrintimit: new Date()
+            }, { transaction: t });
+
+            return supplementaryOrder;
+        });
     }
 };
 
@@ -414,5 +436,6 @@ module.exports = {
     updateSupplementaryOrderPaymentStatus: supplementaryOrderService.updateSupplementaryOrderPaymentStatus,
     deleteSupplementaryOrder: supplementaryOrderService.deleteSupplementaryOrder,
     addPartialPayment: supplementaryOrderService.addPartialPaymentToSupplementaryOrder,
-    cancelPartialPayment: supplementaryOrderService.cancelPartialPayment
+    cancelPartialPayment: supplementaryOrderService.cancelPartialPayment,
+    markAsPrinted: supplementaryOrderService.markAsPrinted
 }; 

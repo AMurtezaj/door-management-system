@@ -147,6 +147,12 @@ const OrderForm = () => {
       }
     }
     
+    if (formData.tipiPorosise === 'derë garazhi + kapak') {
+      if (dayCapacity.dyerGarazhi <= 0 || dayCapacity.kapake <= 0) {
+        return { valid: false, message: 'Nuk ka kapacitet të mjaftueshëm për derë garazhi + kapgjik për këtë ditë. Nevojitet kapacitet për të dyja.' };
+      }
+    }
+    
     return { valid: true };
   };
   
@@ -715,11 +721,12 @@ const OrderForm = () => {
                     name="tipiPorosise"
                     value={formData.tipiPorosise}
                     onChange={handleChange}
-                    className="form-input"
                     required
+                    className="form-control"
                   >
                     <option value="derë garazhi">🏠 Derë Garazhi</option>
                     <option value="kapak">🔧 Kapgjik</option>
+                    <option value="derë garazhi + kapak">🏠🔧 Derë Garazhi + Kapgjik</option>
                   </Form.Select>
                 </Form.Group>
               </Col>

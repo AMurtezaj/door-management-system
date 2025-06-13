@@ -328,9 +328,9 @@ const CapacityManagement = () => {
     // Filter orders by type
     const ordersForType = dayOrders.filter(order => {
       if (type === 'dyerGarazhi') {
-        return order.tipiPorosise === 'derë garazhi';
+        return order.tipiPorosise === 'derë garazhi' || order.tipiPorosise === 'derë garazhi + kapak';
       } else if (type === 'kapake') {
-        return order.tipiPorosise === 'kapak';
+        return order.tipiPorosise === 'kapak' || order.tipiPorosise === 'derë garazhi + kapak';
       }
       return false;
     });

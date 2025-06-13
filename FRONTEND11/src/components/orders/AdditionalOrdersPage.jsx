@@ -6,11 +6,12 @@ import { Calendar3, ArrowRepeat } from 'react-bootstrap-icons';
 import { 
   getSupplementaryOrdersByParentId, 
   updateSupplementaryOrderPaymentStatus, 
-  deleteSupplementaryOrder 
+  deleteSupplementaryOrder,
+  markSupplementaryOrderAsPrinted
 } from '../../services/supplementaryOrderService';
 import { getAllOrders } from '../../services/orderService';
 import { useAuth } from '../../context/AuthContext';
-import SupplementaryOrderInvoice from './SupplementaryOrderInvoice';
+import { generateQRData, generateQRUrl, generateFallbackQRData } from '../../utils/qrDataGenerator';
 
 const AdditionalOrdersPage = () => {
   const [supplementaryOrders, setSupplementaryOrders] = useState([]);
@@ -28,11 +29,6 @@ const AdditionalOrdersPage = () => {
   const [sortOrder, setSortOrder] = useState('asc');
   
   const { isAuthenticated, user } = useAuth();
-  
-  // Print invoice state
-  const [showPrintModal, setShowPrintModal] = useState(false);
-  const [selectedSupplementaryOrder, setSelectedSupplementaryOrder] = useState(null);
-  const [selectedParentOrder, setSelectedParentOrder] = useState(null);
   
   // Fetch data on mount
   useEffect(() => {
@@ -53,7 +49,9 @@ const AdditionalOrdersPage = () => {
       
       // First get all main orders to find garage door orders
       const allOrders = await getAllOrders();
-      const garageDoorOrders = allOrders.filter(order => order.tipiPorosise === 'derë garazhi');
+      const garageDoorOrders = allOrders.filter(order => 
+        order.tipiPorosise === 'derë garazhi' || order.tipiPorosise === 'derë garazhi + kapak'
+      );
       setParentOrders(garageDoorOrders);
       
       // Then get all supplementary orders for these garage door orders
@@ -265,10 +263,539 @@ const AdditionalOrdersPage = () => {
     }
   };
   
-  const handlePrintInvoice = (supplementaryOrder) => {
-    setSelectedSupplementaryOrder(supplementaryOrder);
-    setSelectedParentOrder(supplementaryOrder.parentOrderInfo);
-    setShowPrintModal(true);
+  const handlePrintInvoice = async (supplementaryOrder) => {
+    try {
+      const parentOrder = supplementaryOrder.parentOrderInfo;
+      
+      // Helper function to safely format dates
+      const safeFormatDate = (dateString) => {
+        if (!dateString) return 'N/A';
+        try {
+          return format(new Date(dateString), 'dd/MM/yyyy');
+        } catch (error) {
+          console.error('Date formatting error:', error);
+          return 'N/A';
+        }
+      };
+
+      // Generate comprehensive QR data using the utility
+      const qrData = generateQRData(supplementaryOrder, user, 'SUPPLEMENTARY_INVOICE', parentOrder);
+      
+      // Configuration for QR URLs
+      const QR_CONFIG = {
+        development: {
+          host: '192.168.0.104',
+          port: '5173',
+          protocol: 'http'
+        }
+      };
+      
+      // Generate QR URL
+      const qrUrl = generateQRUrl(qrData, QR_CONFIG);
+
+      // Create the HTML content for the invoice
+      const invoiceHTML = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Faturë Shtesë #${supplementaryOrder.id}</title>
+          <style>
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            
+            body {
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              font-size: 12px;
+              line-height: 1.4;
+              color: #333;
+              background: white;
+            }
+            
+            .invoice-container {
+              max-width: 800px;
+              margin: 0 auto;
+              padding: 20px;
+              background: white;
+            }
+            
+            .header {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 30px;
+              padding-bottom: 20px;
+              border-bottom: 3px solid #007bff;
+            }
+            
+            .company-info {
+              flex: 1;
+            }
+            
+            .company-name {
+              font-size: 28px;
+              font-weight: bold;
+              color: #007bff;
+              margin-bottom: 5px;
+            }
+            
+            .company-tagline {
+              font-size: 14px;
+              color: #666;
+              font-style: italic;
+            }
+            
+            .invoice-details {
+              text-align: right;
+              flex: 1;
+            }
+            
+            .invoice-title {
+              font-size: 24px;
+              font-weight: bold;
+              color: #333;
+              margin-bottom: 10px;
+            }
+            
+            .invoice-number {
+              font-size: 16px;
+              color: #007bff;
+              font-weight: bold;
+            }
+            
+            .info-section {
+              display: flex;
+              justify-content: space-between;
+              margin-bottom: 30px;
+              gap: 40px;
+            }
+            
+            .info-block {
+              flex: 1;
+              padding: 15px;
+              background: #f8f9fa;
+              border-left: 4px solid #007bff;
+            }
+            
+            .info-block h3 {
+              font-size: 14px;
+              font-weight: bold;
+              color: #007bff;
+              margin-bottom: 10px;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+            }
+            
+            .info-block p {
+              margin-bottom: 5px;
+              font-size: 13px;
+            }
+            
+            .info-block strong {
+              color: #333;
+            }
+            
+            .parent-order-link {
+              background: #e3f2fd;
+              border: 1px solid #2196f3;
+              border-radius: 5px;
+              padding: 10px;
+              margin: 20px 0;
+              text-align: center;
+            }
+            
+            .parent-order-link h4 {
+              color: #1976d2;
+              margin-bottom: 5px;
+              font-size: 14px;
+            }
+            
+            .products-section {
+              margin-bottom: 30px;
+            }
+            
+            .section-title {
+              font-size: 16px;
+              font-weight: bold;
+              color: #333;
+              margin-bottom: 15px;
+              padding-bottom: 5px;
+              border-bottom: 2px solid #007bff;
+            }
+            
+            .products-table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 20px;
+              font-size: 12px;
+            }
+            
+            .products-table th {
+              background: #007bff;
+              color: white;
+              padding: 12px 8px;
+              text-align: left;
+              font-weight: bold;
+              font-size: 11px;
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+            }
+            
+            .products-table td {
+              padding: 10px 8px;
+              border-bottom: 1px solid #ddd;
+              vertical-align: top;
+            }
+            
+            .products-table tr:nth-child(even) {
+              background: #f8f9fa;
+            }
+            
+            .products-table tr:hover {
+              background: #e3f2fd;
+            }
+            
+            .financial-summary {
+              display: flex;
+              justify-content: space-between;
+              gap: 30px;
+              margin-bottom: 30px;
+            }
+            
+            .payment-info,
+            .totals {
+              flex: 1;
+              padding: 15px;
+              border: 1px solid #ddd;
+              border-radius: 5px;
+            }
+            
+            .payment-info {
+              background: #f0f8f0;
+            }
+            
+            .totals {
+              background: #f8f8ff;
+            }
+            
+            .payment-info h4,
+            .totals h4 {
+              color: #333;
+              margin-bottom: 10px;
+              font-size: 14px;
+            }
+            
+            .total-row {
+              display: flex;
+              justify-content: space-between;
+              padding: 8px 0;
+              border-bottom: 1px solid #eee;
+            }
+            
+            .total-row.final {
+              border-bottom: none;
+              border-top: 2px solid #007bff;
+              font-weight: bold;
+              font-size: 14px;
+              color: #007bff;
+            }
+            
+            .footer {
+              margin-top: 40px;
+              padding-top: 20px;
+              border-top: 1px solid #ddd;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+            }
+            
+            .qr-section {
+              text-align: center;
+            }
+            
+            .qr-code {
+              width: 80px;
+              height: 80px;
+              border: 1px solid #ddd;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-size: 10px;
+              color: #666;
+              margin: 0 auto 5px;
+            }
+            
+            .footer-info {
+              text-align: right;
+              font-size: 11px;
+              color: #666;
+            }
+            
+            .print-actions {
+              margin: 20px 0;
+              text-align: center;
+              gap: 10px;
+            }
+            
+            .print-actions button {
+              background: #007bff;
+              color: white;
+              border: none;
+              padding: 10px 20px;
+              border-radius: 5px;
+              cursor: pointer;
+              font-size: 14px;
+              margin: 0 5px;
+            }
+            
+            .print-actions button:hover {
+              background: #0056b3;
+            }
+            
+            .print-actions button.secondary {
+              background: #6c757d;
+            }
+            
+            .print-actions button.secondary:hover {
+              background: #545b62;
+            }
+            
+            @media print {
+              .print-actions {
+                display: none !important;
+              }
+              
+              .invoice-container {
+                padding: 0;
+                max-width: none;
+              }
+              
+              body {
+                font-size: 11px;
+              }
+            }
+            
+            .status-badge {
+              display: inline-block;
+              padding: 4px 8px;
+              border-radius: 3px;
+              font-size: 10px;
+              font-weight: bold;
+              text-transform: uppercase;
+            }
+            
+            .status-completed {
+              background: #d4edda;
+              color: #155724;
+            }
+            
+            .status-process {
+              background: #fff3cd;
+              color: #856404;
+            }
+            
+            .payment-paid {
+              background: #d4edda;
+              color: #155724;
+            }
+            
+            .payment-unpaid {
+              background: #f8d7da;
+              color: #721c24;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="invoice-container">
+            <!-- Header -->
+            <div class="header">
+              <div class="company-info">
+                <div class="company-name">LindDoors</div>
+                <div class="company-tagline">Dyert e Garazheve & Sisteme Sigurie</div>
+              </div>
+              <div class="invoice-details">
+                <div class="invoice-title">FATURË SHTESË</div>
+                <div class="invoice-number">#${supplementaryOrder.id}</div>
+              </div>
+            </div>
+
+            <!-- Parent Order Connection -->
+            <div class="parent-order-link">
+              <h4>🔗 Lidhur me Porosinë Kryesore</h4>
+              <p><strong>Porosia #${parentOrder?.id || 'N/A'}</strong> - ${parentOrder?.tipiPorosise || 'N/A'}</p>
+              <p>Data e Dorëzimit: <strong>${safeFormatDate(parentOrder?.dita)}</strong></p>
+            </div>
+
+            <!-- Customer and Order Info -->
+            <div class="info-section">
+              <div class="info-block">
+                <h3>Të Dhënat e Klientit</h3>
+                <p><strong>Emri:</strong> ${supplementaryOrder.emriKlientit || 'N/A'} ${supplementaryOrder.mbiemriKlientit || ''}</p>
+                <p><strong>Telefoni:</strong> ${supplementaryOrder.numriTelefonit || 'N/A'}</p>
+                <p><strong>Vendi:</strong> ${supplementaryOrder.vendi || 'N/A'}</p>
+              </div>
+              
+              <div class="info-block">
+                <h3>Të Dhënat e Porosisë</h3>
+                <p><strong>Data e Krijimit:</strong> ${safeFormatDate(supplementaryOrder.dataKrijimit)}</p>
+                <p><strong>Statusi:</strong> 
+                  <span class="status-badge ${supplementaryOrder.statusi === 'e përfunduar' ? 'status-completed' : 'status-process'}">
+                    ${supplementaryOrder.statusi || 'N/A'}
+                  </span>
+                </p>
+                <p><strong>Marrësi i Kaparos:</strong> ${supplementaryOrder.kaparaReceiver || 'N/A'}</p>
+              </div>
+            </div>
+
+            <!-- Products Section -->
+            <div class="products-section">
+              <h3 class="section-title">Detajet e Produktit</h3>
+              <table class="products-table">
+                <thead>
+                  <tr>
+                    <th>Përshkrimi i Produktit</th>
+                    <th style="width: 120px;">Çmimi Total</th>
+                    <th style="width: 100px;">Kaparja</th>
+                    <th style="width: 120px;">Mbetet për Pagesë</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>${supplementaryOrder.pershkrimiProduktit || 'N/A'}</td>
+                    <td style="text-align: right; font-weight: bold;">${parseFloat(supplementaryOrder.cmimiTotal || 0).toFixed(2)} €</td>
+                    <td style="text-align: right;">${parseFloat(supplementaryOrder.kaparja || 0).toFixed(2)} €</td>
+                    <td style="text-align: right; font-weight: bold;">
+                      ${(parseFloat(supplementaryOrder.cmimiTotal || 0) - parseFloat(supplementaryOrder.kaparja || 0)).toFixed(2)} €
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Financial Summary -->
+            <div class="financial-summary">
+              <div class="payment-info">
+                <h4>💰 Informacioni i Pagesës</h4>
+                <div class="total-row">
+                  <span>Statusi i Pagesës:</span>
+                  <span class="status-badge ${supplementaryOrder.isPaymentDone ? 'payment-paid' : 'payment-unpaid'}">
+                    ${supplementaryOrder.isPaymentDone ? 'E Paguar' : 'E Papaguar'}
+                  </span>
+                </div>
+                <div class="total-row">
+                  <span>Kaparja e Dhënë:</span>
+                  <span>${parseFloat(supplementaryOrder.kaparja || 0).toFixed(2)} €</span>
+                </div>
+                <div class="total-row">
+                  <span>Mbetet për Pagesë:</span>
+                  <span style="color: ${supplementaryOrder.isPaymentDone ? '#28a745' : '#dc3545'}; font-weight: bold;">
+                    ${supplementaryOrder.isPaymentDone ? '0.00' : (parseFloat(supplementaryOrder.cmimiTotal || 0) - parseFloat(supplementaryOrder.kaparja || 0)).toFixed(2)} €
+                  </span>
+                </div>
+              </div>
+              
+              <div class="totals">
+                <h4>📊 Përmbledhja Financiare</h4>
+                <div class="total-row">
+                  <span>Çmimi i Produktit:</span>
+                  <span>${parseFloat(supplementaryOrder.cmimiTotal || 0).toFixed(2)} €</span>
+                </div>
+                <div class="total-row">
+                  <span>Taksa (përfshirë):</span>
+                  <span>0.00 €</span>
+                </div>
+                <div class="total-row final">
+                  <span>TOTALI:</span>
+                  <span>${parseFloat(supplementaryOrder.cmimiTotal || 0).toFixed(2)} €</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+              <div class="qr-section">
+                <div class="qr-code">
+                  QR: ${qrData.verification.code}
+                </div>
+                <small>Kod Sigurie</small>
+                <div style="margin-top: 10px; font-size: 10px;">
+                  <strong>Verifikim:</strong><br/>
+                  <code style="font-size: 8px;">${qrData.verification.code}</code><br/>
+                  <strong>Krijuar:</strong><br/>
+                  ${format(new Date(qrData.verification.generatedAt), 'dd/MM/yyyy HH:mm')}
+                </div>
+              </div>
+              
+              <div class="footer-info">
+                <p><strong>LindDoors</strong></p>
+                <p>Data e Printimit: ${format(new Date(), 'dd/MM/yyyy HH:mm')}</p>
+                <p>Faturë e Vlefshme</p>
+                <div style="margin-top: 10px; font-size: 10px;">
+                  <strong>QR Version:</strong> ${qrData.metadata.qrVersion}<br/>
+                  <strong>Dokument:</strong> ${qrData.documentType}
+                </div>
+              </div>
+            </div>
+
+            <!-- Print Actions -->
+            <div class="print-actions">
+              <button onclick="window.print()">🖨️ Printo Faturën</button>
+              <button onclick="window.close()" class="secondary">❌ Mbyll</button>
+            </div>
+          </div>
+
+          <script>
+            // Auto-print functionality
+            window.addEventListener('load', function() {
+              // Focus the window
+              window.focus();
+              
+              // Generate and display QR code
+              const qrUrl = '${qrUrl}';
+              console.log('QR URL for verification:', qrUrl);
+              
+              // Optional: Auto-print after a short delay
+              // setTimeout(() => window.print(), 500);
+            });
+          </script>
+        </body>
+        </html>
+      `;
+
+      // Open the invoice in a new window
+      const printWindow = window.open('', '_blank', 'width=800,height=900,scrollbars=yes,resizable=yes');
+      
+      if (printWindow) {
+        printWindow.document.write(invoiceHTML);
+        printWindow.document.close();
+        
+        // Mark as printed in the database
+        try {
+          await markSupplementaryOrderAsPrinted(supplementaryOrder.id);
+          
+          // Update the local state to reflect the change
+          setSupplementaryOrders(orders => 
+            orders.map(order => 
+              order.id === supplementaryOrder.id 
+                ? { ...order, eshtePrintuar: true, dataPrintimit: new Date().toISOString() }
+                : order
+            )
+          );
+        } catch (error) {
+          console.error('Error marking supplementary order as printed:', error);
+          // Don't show error to user as the print window opened successfully
+        }
+      } else {
+        alert('Nuk mund të hapet dritarja e printimit. Ju lutemi kontrolloni blokuesin e dritareve popup.');
+      }
+      
+    } catch (error) {
+      console.error('Error printing supplementary order invoice:', error);
+      setError('Ka ndodhur një gabim gjatë printimit të faturës.');
+    }
   };
   
   const getStatusBadge = (status) => {
@@ -561,14 +1088,6 @@ const AdditionalOrdersPage = () => {
           )}
         </tbody>
       </Table>
-      
-      {/* Print Invoice Modal */}
-      <SupplementaryOrderInvoice 
-        show={showPrintModal} 
-        onHide={() => setShowPrintModal(false)} 
-        supplementaryOrder={selectedSupplementaryOrder}
-        parentOrder={selectedParentOrder}
-      />
     </Container>
   );
 };

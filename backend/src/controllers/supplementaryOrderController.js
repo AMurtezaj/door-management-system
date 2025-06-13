@@ -289,6 +289,31 @@ const supplementaryOrderController = {
                 message: error.message || 'Ka ndodhur një gabim gjatë anulimit të pagesës'
             });
         }
+    },
+
+    // Mark supplementary order as printed
+    markAsPrinted: async (req, res) => {
+        try {
+            const { id } = req.params;
+            
+            if (!id || isNaN(parseInt(id))) {
+                return res.status(400).json({ 
+                    message: 'ID e porosisë shtesë është e detyrueshme dhe duhet të jetë një numër!' 
+                });
+            }
+
+            const supplementaryOrder = await supplementaryOrderService.markAsPrinted(id);
+            
+            res.json({
+                message: 'Porosia shtesë u shënua si e printuar!',
+                data: supplementaryOrder
+            });
+        } catch (error) {
+            console.error('Error marking supplementary order as printed:', error);
+            res.status(400).json({ 
+                message: error.message || 'Diçka shkoi keq gjatë shënimit të porosisë si e printuar!' 
+            });
+        }
     }
 };
 

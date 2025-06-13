@@ -88,6 +88,16 @@ const SupplementaryOrder = sequelize.define('SupplementaryOrder', {
         defaultValue: 'në proces',
         comment: 'Statusi i produktit shtesë (a është gati/dorëzuar)'
     },
+    eshtePrintuar: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        comment: 'A është printuar fatura e produktit shtesë'
+    },
+    dataPrintimit: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        comment: 'Data kur është printuar fatura e produktit shtesë'
+    },
     createdAt: {
         type: DataTypes.DATE,
         defaultValue: DataTypes.NOW

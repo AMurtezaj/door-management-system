@@ -27,6 +27,9 @@ router.post('/:id/cancel-payment', auth, supplementaryOrderController.cancelPart
 // Update product status
 router.patch('/:id/product-status', auth, supplementaryOrderController.updateSupplementaryOrderProductStatus);
 
+// Mark supplementary order as printed
+router.patch('/:id/mark-printed', auth, supplementaryOrderController.markAsPrinted);
+
 // Delete supplementary order (admin only)
 router.delete('/:id', auth, isAdmin, supplementaryOrderController.deleteSupplementaryOrder);
 

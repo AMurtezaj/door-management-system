@@ -12,7 +12,7 @@ const Order = sequelize.define('Order', {
         allowNull: false
     },
     tipiPorosise: {
-        type: DataTypes.ENUM('derë garazhi', 'kapak', 'derë dhome'),
+        type: DataTypes.ENUM('derë garazhi', 'kapak', 'derë dhome', 'derë garazhi + kapak'),
         allowNull: false
     },
     shitesi: {

@@ -1,16 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, Table, Badge, Button, Alert, Spinner } from 'react-bootstrap';
 import { 
   getSupplementaryOrdersByParentId, 
   updateSupplementaryOrderPaymentStatus, 
   deleteSupplementaryOrder,
-  addPartialPaymentToSupplementaryOrder
+  addPartialPaymentToSupplementaryOrder,
+  markSupplementaryOrderAsPrinted
 } from '../../services/supplementaryOrderService';
+import { getOrderById } from '../../services/orderService';
 import { useAuth } from '../../context/AuthContext';
 import PartialPaymentModal from '../payments/PartialPaymentModal';
+import SupplementaryOrderInvoice from './SupplementaryOrderInvoice';
 
 const SupplementaryOrdersList = ({ parentOrderId, onUpdate }) => {
-  const { canManagePayments, canEditOrders, canDeleteOrders, isManager } = useAuth();
+  const { canManagePayments, canEditOrders, canDeleteOrders, isManager, user } = useAuth();
   const [supplementaryOrders, setSupplementaryOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -19,6 +22,10 @@ const SupplementaryOrdersList = ({ parentOrderId, onUpdate }) => {
   // Partial payment state
   const [showPartialPaymentModal, setShowPartialPaymentModal] = useState(false);
   const [selectedOrderForPayment, setSelectedOrderForPayment] = useState(null);
+  
+  // For direct print functionality
+  const invoiceRef = useRef();
+  const [parentOrders, setParentOrders] = useState({}); // Cache parent orders
 
   useEffect(() => {
     if (parentOrderId) {
@@ -150,6 +157,252 @@ const SupplementaryOrdersList = ({ parentOrderId, onUpdate }) => {
     }
   };
 
+  const handlePrintInvoice = async (order) => {
+    try {
+      // Get parent order if not cached
+      let parentOrder = parentOrders[order.parentOrderId];
+      if (!parentOrder) {
+        parentOrder = await getOrderById(order.parentOrderId);
+        setParentOrders(prev => ({
+          ...prev,
+          [order.parentOrderId]: parentOrder
+        }));
+      }
+
+      // Create a new window for the invoice
+      const printWindow = window.open('', '_blank', 'width=800,height=600');
+      if (!printWindow) {
+        alert('Pop-up blocked. Please allow pop-ups and try again.');
+        return;
+      }
+
+      // Create the invoice HTML
+      const invoiceHTML = createInvoiceHTML(order, parentOrder, user);
+      
+      // Write content to print window
+      printWindow.document.write(invoiceHTML);
+      printWindow.document.close();
+
+      // Mark as printed
+      try {
+        await markSupplementaryOrderAsPrinted(order.id);
+        // Refresh orders to update print status
+        fetchSupplementaryOrders();
+      } catch (err) {
+        console.error('Error marking as printed:', err);
+      }
+
+    } catch (err) {
+      console.error('Error printing invoice:', err);
+      alert('Gabim gjatë printimit të faturës: ' + err.message);
+    }
+  };
+
+  const createInvoiceHTML = (supplementaryOrder, parentOrder, user) => {
+    const totalPrice = parseFloat(supplementaryOrder?.cmimiTotal || 0);
+    const downPayment = parseFloat(supplementaryOrder?.kaparja || 0);
+    const remainingPayment = totalPrice - downPayment;
+
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>LindiDoors Supplementary Invoice #${supplementaryOrder?.id}</title>
+        <meta charset="utf-8">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: white;
+            color: black;
+          }
+          .invoice-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+          }
+          .print-buttons {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            text-align: center;
+          }
+          .print-buttons button {
+            margin: 0 10px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+          }
+          .btn-primary {
+            background-color: #007bff;
+            color: white;
+          }
+          .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+          }
+          .invoice-content {
+            border: 1px solid #dee2e6;
+            padding: 30px;
+            background: white;
+          }
+          @media print {
+            .print-buttons { display: none; }
+            body { padding: 0; }
+            .invoice-container { max-width: none; }
+          }
+          .header-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+          }
+          .company-info h2 {
+            color: #007bff;
+            margin-bottom: 5px;
+          }
+          .invoice-title {
+            text-align: right;
+          }
+          .invoice-title h1 {
+            color: #343a40;
+            margin-bottom: 10px;
+          }
+          .customer-info, .delivery-info {
+            margin-bottom: 25px;
+          }
+          .details-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+          }
+          .details-table th, .details-table td {
+            border: 1px solid #dee2e6;
+            padding: 12px;
+            text-align: left;
+          }
+          .details-table th {
+            background-color: #f8f9fa;
+          }
+          .text-end { text-align: right; }
+          .text-center { text-align: center; }
+          .mb-3 { margin-bottom: 1rem; }
+          .fw-bold { font-weight: bold; }
+        </style>
+      </head>
+      <body>
+        <div class="invoice-container">
+          <div class="print-buttons">
+            <button class="btn-primary" onclick="window.print()">🖨️ Printo</button>
+            <button class="btn-secondary" onclick="window.close()">❌ Mbyll</button>
+          </div>
+          
+          <div class="invoice-content">
+            <div class="header-row">
+              <div class="company-info">
+                <h2>LindDoors</h2>
+                <p>Management System</p>
+                <p>
+                  Adresa: Rr. "Lidhja e Prizrenit"<br />
+                  Prishtinë, Kosovë<br />
+                  Tel: +383 44 123 456<br />
+                  Email: info@lindidoors.com
+                </p>
+              </div>
+              <div class="invoice-title">
+                <h1>FATURË - POROSI SHTESË</h1>
+                <h5>Nr. i Porosisë Shtesë: #${supplementaryOrder?.id || 'N/A'}</h5>
+                <p>Data: ${new Date().toLocaleDateString('en-GB')}</p>
+                <p>Statusi: ${supplementaryOrder?.statusi || 'N/A'}</p>
+                ${parentOrder ? `<p style="color: #007bff;"><small>Lidhur me Porosinë Kryesore #${parentOrder.id}</small></p>` : ''}
+              </div>
+            </div>
+
+            <div class="customer-info">
+              <h5>Klienti:</h5>
+              <p>
+                <strong>${supplementaryOrder?.emriKlientit || ''} ${supplementaryOrder?.mbiemriKlientit || ''}</strong><br />
+                ${supplementaryOrder?.vendi || ''}<br />
+                Tel: ${supplementaryOrder?.numriTelefonit || ''}
+              </p>
+            </div>
+
+            <div class="delivery-info">
+              <h5>Detajet e Dërgesës:</h5>
+              <p>
+                Lokacioni: ${supplementaryOrder?.vendi || ''}<br />
+                ${parentOrder ? `
+                  Data e Dërgesës: ${parentOrder.dita ? new Date(parentOrder.dita).toLocaleDateString('en-GB') : 'N/A'}<br />
+                  Dërguar me: Porosinë Kryesore #${parentOrder.id}
+                ` : ''}
+              </p>
+            </div>
+
+            <table class="details-table">
+              <thead>
+                <tr>
+                  <th>Përshkrimi</th>
+                  <th class="text-end">Çmimi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>
+                    <strong>Produkt Shtesë</strong><br />
+                    ${supplementaryOrder?.pershkrimiProduktit || ''}
+                  </td>
+                  <td class="text-end">${totalPrice.toFixed(2)} €</td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th>Kapari i Paguar</th>
+                  <td class="text-end">${downPayment.toFixed(2)} €</td>
+                </tr>
+                <tr>
+                  <th>Total i Mbetur</th>
+                  <td class="text-end">${remainingPayment.toFixed(2)} €</td>
+                </tr>
+                <tr>
+                  <th>Totali</th>
+                  <td class="text-end"><strong>${totalPrice.toFixed(2)} €</strong></td>
+                </tr>
+              </tfoot>
+            </table>
+
+            <div style="margin-top: 30px;">
+              <h5>Shënime:</h5>
+              <p>
+                Faleminderit për besimin! Kjo porosi shtesë do të dërgohet së bashku me porosinë kryesore 
+                për të njëjtin lokacion.
+              </p>
+              <p>
+                <strong>Mënyra e Pagesës: </strong>${supplementaryOrder?.menyraPageses === 'kesh' ? 'Kesh' : 'Bankë'}<br />
+                <strong>Pagesa e Përfunduar: </strong>${supplementaryOrder?.isPaymentDone ? 'Po' : 'Jo'}<br />
+                ${supplementaryOrder?.kaparaReceiver ? `<strong>Kaparja u mor nga: </strong>${supplementaryOrder.kaparaReceiver}<br />` : ''}
+              </p>
+              ${parentOrder ? `
+                <p style="color: #007bff;">
+                  <strong>Shënim:</strong> Kjo porosi shtesë do të dërgohet së bashku me porosinë kryesore 
+                  #${parentOrder.id} (${parentOrder?.tipiPorosise || 'N/A'}) në të njëjtin transport.
+                </p>
+              ` : ''}
+              <div style="margin-top: 30px;">
+                <p><strong>Nënshkrimi:</strong></p>
+                <div style="width: 200px; height: 40px; border-bottom: 1px solid #000;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+  };
+
   const getStatusBadge = (status) => {
     switch (status) {
       case 'në proces':
@@ -266,6 +519,15 @@ const SupplementaryOrdersList = ({ parentOrderId, onUpdate }) => {
                   <td>{getStatusBadge(order.statusi)}</td>
                   <td>
                     <div className="d-flex gap-1 flex-wrap">
+                      <Button 
+                        variant="primary" 
+                        size="sm" 
+                        onClick={() => handlePrintInvoice(order)}
+                        title={order.eshtePrintuar ? "Printo Përsëri" : "Printo Faturën Shtesë"}
+                      >
+                        <i className="bi bi-printer"></i> {order.eshtePrintuar ? "Printo Përsëri" : "Printo"}
+                      </Button>
+                      
                       {!order.isPaymentDone && canManagePayments && (
                         <Button 
                           variant="success" 

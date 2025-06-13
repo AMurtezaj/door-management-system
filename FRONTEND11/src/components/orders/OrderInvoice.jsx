@@ -3,6 +3,7 @@ import { Card, Table, Row, Col, Container } from 'react-bootstrap';
 import { format } from 'date-fns';
 import QRCode from 'qrcode';
 import DimensionVisualization from './DimensionVisualization';
+import { generateQRData, generateQRUrl, generateFallbackQRData } from '../../utils/qrDataGenerator';
 
 const OrderInvoice = forwardRef(({ order, user }, ref) => {
   const qrCodeRef = useRef(null);
@@ -27,117 +28,7 @@ const OrderInvoice = forwardRef(({ order, user }, ref) => {
 
   // Memoize the QR data generation to prevent infinite loops
   const qrData = useMemo(() => {
-    const printTimestamp = new Date();
-    const printDate = format(printTimestamp, 'dd/MM/yyyy');
-    const printTime = format(printTimestamp, 'HH:mm:ss');
-    
-    // Generate unique verification hash based on order data and timestamp
-    const verificationSeed = `${order.id}-${order.emriKlientit}-${order.mbiemriKlientit}-${printTimestamp.getTime()}`;
-    const verificationHash = btoa(verificationSeed).slice(0, 12).toUpperCase();
-    
-    // Generate creative authenticity token
-    const authenticityToken = `LD${printTimestamp.getFullYear()}${String(printTimestamp.getMonth() + 1).padStart(2, '0')}${order.id}${verificationHash.slice(0, 4)}`;
-    
-    // Calculate remaining payment
-    const remainingPayment = (parseFloat(order.cmimiTotal) - parseFloat(order.kaparja || 0)).toFixed(2);
-    
-    return {
-      // Document Information
-      documentType: "INVOICE",
-      documentVersion: "2.0",
-      companyName: "LindDoors Management System",
-      
-      // Print Authentication
-      printInfo: {
-        printedBy: user?.emri && user?.mbiemri ? `${user.emri} ${user.mbiemri}` : user?.name || 'System Admin',
-        userRole: user?.role || 'Administrator',
-        userEmail: user?.email || 'admin@lindoors.com',
-        printDate: printDate,
-        printTime: printTime,
-        printTimestamp: printTimestamp.toISOString(),
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
-      },
-      
-      // Order Details
-      orderDetails: {
-        orderId: order.id,
-        orderType: order.tipiPorosise,
-        status: order.statusi,
-        measurementStatus: order.statusiMatjes || 'e pamatur',
-        orderDate: order.dita ? format(new Date(order.dita), 'dd/MM/yyyy') : null,
-        measurementDate: order.dataMatjes ? format(new Date(order.dataMatjes), 'dd/MM/yyyy') : null,
-        description: order.pershkrimi || 'Nuk ka përshkrim'
-      },
-      
-      // Customer Information
-      customer: {
-        name: `${order.emriKlientit} ${order.mbiemriKlientit}`,
-        phone: order.numriTelefonit,
-        location: order.vendi
-      },
-      
-      // Personnel Information
-      personnel: {
-        seller: order.shitesi,
-        measurer: order.matesi || 'N/A',
-        sender: order.sender || 'N/A',
-        installer: order.installer || 'N/A'
-      },
-      
-      // Financial Information
-      financial: {
-        totalPrice: parseFloat(order.cmimiTotal).toFixed(2),
-        downPayment: parseFloat(order.kaparja || 0).toFixed(2),
-        remainingPayment: remainingPayment,
-        paymentMethod: order.menyraPageses === 'kesh' ? 'Kesh' : 'Bankë',
-        paymentCompleted: order.isPaymentDone ? 'Po' : 'Jo',
-        downPaymentReceiver: order.kaparaReceiver || 'N/A'
-      },
-      
-      // Dimensions (if available)
-      dimensions: order.gjatesia || order.gjeresia ? {
-        length: order.gjatesia ? parseFloat(order.gjatesia).toFixed(2) : null,
-        width: order.gjeresia ? parseFloat(order.gjeresia).toFixed(2) : null,
-        topProfile: order.profiliLarte ? parseFloat(order.profiliLarte).toFixed(2) : '0',
-        bottomProfile: order.profiliPoshtem ? parseFloat(order.profiliPoshtem).toFixed(2) : '0',
-        finalLength: order.gjatesiaFinale ? parseFloat(order.gjatesiaFinale).toFixed(2) : null,
-        finalWidth: order.gjeresiaFinale ? parseFloat(order.gjeresiaFinale).toFixed(2) : null
-      } : null,
-      
-      // Status Flags
-      statusFlags: {
-        isPrinted: order.eshtePrintuar ? 'Po' : 'Jo',
-        paymentDone: order.isPaymentDone ? 'Po' : 'Jo'
-      },
-      
-      // Security & Verification
-      security: {
-        verificationCode: `LD-${order.id}-${printTimestamp.getTime().toString(36).toUpperCase()}`,
-        verificationHash: verificationHash,
-        authenticityToken: authenticityToken,
-        documentHash: btoa(`${order.id}${order.emriKlientit}${order.cmimiTotal}${printTimestamp.getTime()}`).slice(0, 16),
-        securityLevel: "STANDARD",
-        antiCounterfeit: `${printTimestamp.getFullYear()}-${order.id}-${verificationHash.slice(-4)}`
-      },
-      
-      // Creative Verification Elements
-      verification: {
-        magicNumber: (order.id * 7 + printTimestamp.getDate() * 13) % 9999,
-        colorCode: `#${((order.id * 16777215) % 16777215).toString(16).padStart(6, '0')}`,
-        patternCode: `${order.id.toString(2).slice(-8).padStart(8, '0')}`,
-        checksumDigit: (order.id.toString().split('').reduce((sum, digit) => sum + parseInt(digit), 0) % 10),
-        uniqueSignature: btoa(`${order.emriKlientit}${order.mbiemriKlientit}${order.id}`).slice(0, 8)
-      },
-      
-      // Metadata
-      metadata: {
-        qrVersion: "3.0",
-        generatedAt: printTimestamp.toISOString(),
-        expiresAt: new Date(printTimestamp.getTime() + (365 * 24 * 60 * 60 * 1000)).toISOString(), // 1 year
-        validationUrl: `https://verify.lindoors.com/invoice/${order.id}/${verificationHash}`,
-        supportContact: "+383 44 123 456"
-      }
-    };
+    return generateQRData(order, user, 'INVOICE');
   }, [order.id, order.emriKlientit, order.mbiemriKlientit, order.cmimiTotal, order.kaparja, order.tipiPorosise, order.statusi, user?.emri, user?.mbiemri, user?.name, user?.role, user?.email]); // Only depend on stable values
 
   // Generate QR code only once when component mounts or order changes
@@ -146,22 +37,8 @@ const OrderInvoice = forwardRef(({ order, user }, ref) => {
     
     const generateQRCode = async () => {
       try {
-        // Create a verification URL with the data
-        // Use environment variable or detect if we're in development
-        const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        let baseUrl;
-        
-        if (isDevelopment) {
-          // For development, use the configured IP for mobile testing
-          const config = QR_CONFIG.development;
-          baseUrl = `${config.protocol}://${config.host}:${config.port}`;
-        } else {
-          // For production, use the actual domain
-          baseUrl = window.location.origin;
-        }
-        
-        const encodedData = encodeURIComponent(JSON.stringify(qrData));
-        const verificationUrl = `${baseUrl}/verify?data=${encodedData}`;
+        // Generate the verification URL
+        const verificationUrl = generateQRUrl(qrData, QR_CONFIG);
         
         // Generate QR code with the verification URL
         const dataUrl = await QRCode.toDataURL(verificationUrl, {
@@ -192,27 +69,8 @@ const OrderInvoice = forwardRef(({ order, user }, ref) => {
         console.error('Error generating QR code:', error);
         // Fallback to a simpler QR code with less data
         try {
-          const simpleData = {
-            orderId: order.id,
-            customer: `${order.emriKlientit} ${order.mbiemriKlientit}`,
-            total: order.cmimiTotal,
-            printedBy: qrData.printInfo.printedBy,
-            printTime: qrData.printInfo.printTimestamp,
-            verificationCode: qrData.security.verificationHash
-          };
-          
-          const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-          let baseUrl;
-          
-          if (isDevelopment) {
-            const config = QR_CONFIG.development;
-            baseUrl = `${config.protocol}://${config.host}:${config.port}`;
-          } else {
-            baseUrl = window.location.origin;
-          }
-          
-          const encodedFallbackData = encodeURIComponent(JSON.stringify(simpleData));
-          const fallbackUrl = `${baseUrl}/verify?data=${encodedFallbackData}`;
+          const fallbackData = generateFallbackQRData(order, user, 'INVOICE');
+          const fallbackUrl = generateQRUrl(fallbackData, QR_CONFIG);
           
           const fallbackDataUrl = await QRCode.toDataURL(fallbackUrl, {
             width: 140,
@@ -237,7 +95,7 @@ const OrderInvoice = forwardRef(({ order, user }, ref) => {
     };
     
     generateQRCode();
-  }, [order.id, qrGenerated]); // Only depend on order.id and generation status
+  }, [order.id, qrGenerated, qrData]); // Only depend on order.id, generation status, and qrData
 
   // Prepare dimension data for visualization
   const dimensionData = {
@@ -245,8 +103,10 @@ const OrderInvoice = forwardRef(({ order, user }, ref) => {
     gjeresia: order.gjeresia,
     profiliLarte: order.profiliLarte,
     profiliPoshtem: order.profiliPoshtem,
-    gjatesiaFinale: order.gjatesiaFinale,
-    gjeresiaFinale: order.gjeresiaFinale
+    gjatesiaFinale: order.gjatesiaFinale || (order.gjatesia && order.profiliLarte ? 
+      parseFloat(order.gjatesia) - parseFloat(order.profiliLarte) : null),
+    gjeresiaFinale: order.gjeresiaFinale || (order.gjeresia && order.profiliPoshtem ? 
+      parseFloat(order.gjeresia) - parseFloat(order.profiliPoshtem) : null)
   };
 
   return (
@@ -271,7 +131,7 @@ const OrderInvoice = forwardRef(({ order, user }, ref) => {
                 <p>Data: {format(new Date(), 'dd/MM/yyyy')}</p>
                 <p>Statusi: {order.statusi}</p>
                 <p className="small text-muted">
-                  Kodi i Autenticitetit: <strong>{qrData.security.authenticityToken}</strong>
+                  Kodi i Autenticitetit: <strong>{qrData.verification.code}</strong>
                 </p>
               </Col>
             </Row>
@@ -396,21 +256,12 @@ const OrderInvoice = forwardRef(({ order, user }, ref) => {
                     />
                   </div>
                   <div className="small text-center">
-                    <div><strong>Printuar nga:</strong></div>
-                    <div>{qrData.printInfo.printedBy}</div>
-                    <div className="text-muted">{qrData.printInfo.userRole}</div>
+                    <div><strong>Kodi i Verifikimit:</strong></div>
+                    <div><code style={{ fontSize: '10px' }}>{qrData.verification.code}</code></div>
                     <hr className="my-2" />
-                    <div><strong>Data & Ora:</strong></div>
-                    <div>{qrData.printInfo.printDate}</div>
-                    <div>{qrData.printInfo.printTime}</div>
+                    <div><strong>Data e Krijimit:</strong></div>
+                    <div>{format(new Date(qrData.verification.generatedAt), 'dd/MM/yyyy HH:mm')}</div>
                     <hr className="my-2" />
-                    <div className="text-primary">
-                      <strong>Kodi i Verifikimit:</strong><br />
-                      <code style={{ fontSize: '10px' }}>{qrData.security.verificationHash}</code>
-                    </div>
-                    <div className="mt-2 text-success">
-                      <strong>Magic #:</strong> {qrData.verification.magicNumber}
-                    </div>
                     <div className="mt-1" style={{ fontSize: '8px', color: '#6c757d' }}>
                       Skano QR kodin për detaje të plota
                     </div>
@@ -423,12 +274,10 @@ const OrderInvoice = forwardRef(({ order, user }, ref) => {
             <Row className="mt-4 pt-3" style={{ borderTop: '1px dashed #ccc' }}>
               <Col md={12} className="text-center">
                 <div className="small text-muted">
-                  <strong>Verifikimi i Autenticitetit:</strong> {qrData.security.authenticityToken} | 
-                  <strong> Checksum:</strong> {qrData.verification.checksumDigit} | 
-                  <strong> Pattern:</strong> {qrData.verification.patternCode} | 
-                  <strong> Signature:</strong> {qrData.verification.uniqueSignature}
+                  <strong>Verifikimi i Autenticitetit:</strong> {qrData.verification.code} | 
+                  <strong> Versioni QR:</strong> {qrData.metadata.qrVersion}
                   <br />
-                  <em>Ky dokument është i mbrojtur me teknologji të avancuara anti-falsifikimi. Për verifikim kontaktoni: +383 44 123 456</em>
+                  <em>Ky dokument është i verifikuar dhe autentik. Për verifikim kontaktoni: +383 44 123 456</em>
                 </div>
               </Col>
             </Row>

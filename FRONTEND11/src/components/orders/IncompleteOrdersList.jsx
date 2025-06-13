@@ -3,9 +3,10 @@ import { Container, Table, Badge, Button, Row, Col, Form, Alert, Spinner, Card }
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { sq } from 'date-fns/locale';
-import { List, Eye, PencilSquare, InfoCircle, CheckCircleFill, PlusSquare } from 'react-bootstrap-icons';
+import { List, PencilSquare, InfoCircle, CheckCircleFill, PlusSquare } from 'react-bootstrap-icons';
 import { getAllOrders } from '../../services/orderService';
 import { useAuth } from '../../context/AuthContext';
+import PrintInvoiceModal from './PrintInvoiceModal';
 
 const IncompleteOrdersList = () => {
   const navigate = useNavigate();
@@ -15,7 +16,11 @@ const IncompleteOrdersList = () => {
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   
-  const { isAuthenticated, canEditOrders } = useAuth();
+  // Print modal state
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  
+  const { isAuthenticated, canEditOrders, user } = useAuth();
   
   useEffect(() => {
     if (isAuthenticated) {
@@ -70,14 +75,15 @@ const IncompleteOrdersList = () => {
     navigate(`/orders/complete/${orderId}`);
   };
 
-  const handleViewOrder = (orderId) => {
-    navigate(`/orders/edit/${orderId}`);
+  const handlePrintOrder = (order) => {
+    setSelectedOrder(order);
+    setShowPrintModal(true);
   };
 
   const getOrderStatusBadge = (order) => {
     return (
       <Badge bg="warning" className="me-2">
-        📏 Matje e Kompletuar
+        📏 Në proces të matjes
       </Badge>
     );
   };
@@ -125,6 +131,7 @@ const IncompleteOrdersList = () => {
             Gjatë kompletimit mund të përditësoni: informacionet e matjes (status, matës, datë), 
             të dhënat financiare (çmimi, kaparja, pagesa), informacionet e personelit (dërguesi, montuesi), 
             dimensionet e derës dhe detajet e tjera të porosisë.
+            <br /><strong>Printimi:</strong> Mund të printoni fatura për matësit përpara kompletimit të porosisë për t'u dhënë detajet e nevojshme të matjes.
             <div className="mt-2">
               <Button 
                 variant="outline-primary" 
@@ -224,10 +231,12 @@ const IncompleteOrdersList = () => {
                   </td>
                   <td>
                     <Badge 
-                      bg={order.tipiPorosise === 'derë garazhi' ? 'primary' : 'secondary'}
+                      bg={order.tipiPorosise === 'derë garazhi' ? 'primary' : 
+                         order.tipiPorosise === 'derë garazhi + kapak' ? 'success' : 'secondary'}
                       className="me-1"
                     >
-                      {order.tipiPorosise === 'derë garazhi' ? '🏠 Derë Garazhi' : '🔧 Kapgjik'}
+                      {order.tipiPorosise === 'derë garazhi' ? '🏠 Derë Garazhi' : 
+                       order.tipiPorosise === 'derë garazhi + kapak' ? '🏠🔧 Derë Garazhi + Kapgjik' : '🔧 Kapgjik'}
                     </Badge>
                   </td>
                   <td>
@@ -249,10 +258,12 @@ const IncompleteOrdersList = () => {
                       <Button
                         variant="outline-primary"
                         size="sm"
-                        onClick={() => handleViewOrder(order.id)}
-                        title="Shiko Detajet"
+                        onClick={() => handlePrintOrder(order)}
+                        title="Printo për Matës"
+                        className="d-flex align-items-center"
                       >
-                        <Eye size={14} />
+                        <i className="bi bi-printer me-1"></i>
+                        Printo
                       </Button>
                     </div>
                   </td>
@@ -262,6 +273,16 @@ const IncompleteOrdersList = () => {
           </Table>
         </Card>
       )}
+      
+      {/* Print Invoice Modal */}
+      <PrintInvoiceModal 
+        show={showPrintModal} 
+        onHide={() => {
+          setShowPrintModal(false);
+          setSelectedOrder(null);
+        }} 
+        order={selectedOrder}
+      />
     </Container>
   );
 };

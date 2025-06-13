@@ -605,7 +605,7 @@ const OrderList = () => {
                     />
                   )}
                   
-                  {order.tipiPorosise === 'derë garazhi' && (
+                  {(order.tipiPorosise === 'derë garazhi' || order.tipiPorosise === 'derë garazhi + kapak') && (
                     <Button 
                       variant="outline-success" 
                       size="sm" 

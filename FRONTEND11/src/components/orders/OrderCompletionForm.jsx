@@ -763,7 +763,8 @@ const OrderCompletionForm = () => {
                   </Form.Label>
                   <Form.Control
                     type="text"
-                    value={formData.tipiPorosise === 'derë garazhi' ? '🏠 Derë Garazhi' : '🔧 Kapgjik'}
+                    value={formData.tipiPorosise === 'derë garazhi' ? '🏠 Derë Garazhi' : 
+                           formData.tipiPorosise === 'derë garazhi + kapak' ? '🏠🔧 Derë Garazhi + Kapgjik' : '🔧 Kapgjik'}
                     readOnly
                     className="form-input readonly-field"
                   />

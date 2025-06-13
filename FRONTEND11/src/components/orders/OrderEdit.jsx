@@ -194,7 +194,8 @@ const OrderEdit = () => {
               console.warn(`Could not check capacity for ${capacity.dita}:`, error);
               // Include anyway as potential option
               if ((formData.tipiPorosise === 'derë garazhi' && capacity.dyerGarazhi > 0) ||
-                  (formData.tipiPorosise === 'kapak' && capacity.kapake > 0)) {
+                  (formData.tipiPorosise === 'kapak' && capacity.kapake > 0) ||
+                  (formData.tipiPorosise === 'derë garazhi + kapak' && capacity.dyerGarazhi > 0 && capacity.kapake > 0)) {
                 alternatives.push(capacity.dita);
               }
             }
@@ -779,11 +780,12 @@ const OrderEdit = () => {
                     name="tipiPorosise"
                     value={formData.tipiPorosise}
                     onChange={handleChange}
-                    className="form-input"
                     required
+                    className="form-control"
                   >
                     <option value="derë garazhi">🏠 Derë Garazhi</option>
                     <option value="kapak">🔧 Kapgjik</option>
+                    <option value="derë garazhi + kapak">🏠🔧 Derë Garazhi + Kapgjik</option>
                   </Form.Select>
                 </Form.Group>
               </Col>
