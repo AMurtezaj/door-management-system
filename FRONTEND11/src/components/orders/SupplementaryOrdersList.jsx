@@ -11,6 +11,7 @@ import { getOrderById } from '../../services/orderService';
 import { useAuth } from '../../context/AuthContext';
 import PartialPaymentModal from '../payments/PartialPaymentModal';
 import SupplementaryOrderInvoice from './SupplementaryOrderInvoice';
+import SupplementaryOrderEditForm from './SupplementaryOrderEditForm';
 
 const SupplementaryOrdersList = ({ parentOrderId, onUpdate }) => {
   const { canManagePayments, canEditOrders, canDeleteOrders, isManager, user } = useAuth();
@@ -22,6 +23,10 @@ const SupplementaryOrdersList = ({ parentOrderId, onUpdate }) => {
   // Partial payment state
   const [showPartialPaymentModal, setShowPartialPaymentModal] = useState(false);
   const [selectedOrderForPayment, setSelectedOrderForPayment] = useState(null);
+  
+  // Edit order state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedOrderForEdit, setSelectedOrderForEdit] = useState(null);
   
   // For direct print functionality
   const invoiceRef = useRef();
@@ -129,6 +134,29 @@ const SupplementaryOrdersList = ({ parentOrderId, onUpdate }) => {
     } finally {
       setActionLoading(prev => ({ ...prev, [`payment_${order.id}`]: false }));
     }
+  };
+
+  const handleEdit = (order) => {
+    setSelectedOrderForEdit(order);
+    setShowEditModal(true);
+  };
+
+  const handleEditSuccess = (updatedOrder) => {
+    // Update the order in the list
+    setSupplementaryOrders(orders => 
+      orders.map(order => 
+        order.id === updatedOrder.id ? updatedOrder : order
+      )
+    );
+    
+    // Notify parent component of update
+    if (onUpdate) {
+      onUpdate();
+    }
+    
+    // Show success message
+    setError('');
+    alert('Porosia shtesë u përditësua me sukses!');
   };
 
   const handleDelete = async (id) => {
@@ -406,11 +434,12 @@ const SupplementaryOrdersList = ({ parentOrderId, onUpdate }) => {
   const getStatusBadge = (status) => {
     switch (status) {
       case 'në proces':
+      case 'borxh': // Treat debt status as "në proces" since debt info is shown in price field
         return <Badge bg="warning">Në Proces</Badge>;
       case 'e përfunduar':
         return <Badge bg="success">E Përfunduar</Badge>;
       default:
-        return <Badge bg="secondary">{status}</Badge>;
+        return <Badge bg="secondary">Në Proces</Badge>; // Default to "Në Proces" for any unknown status
     }
   };
 
@@ -519,6 +548,17 @@ const SupplementaryOrdersList = ({ parentOrderId, onUpdate }) => {
                   <td>{getStatusBadge(order.statusi)}</td>
                   <td>
                     <div className="d-flex gap-1 flex-wrap">
+                      {canEditOrders && (
+                        <Button 
+                          variant="info" 
+                          size="sm" 
+                          onClick={() => handleEdit(order)}
+                          disabled={actionLoading[`edit_${order.id}`]}
+                        >
+                          <i className="bi bi-pencil"></i> Edito
+                        </Button>
+                      )}
+                      
                       <Button 
                         variant="primary" 
                         size="sm" 
@@ -601,6 +641,18 @@ const SupplementaryOrdersList = ({ parentOrderId, onUpdate }) => {
         }}
         supplementaryOrder={selectedOrderForPayment}
         onPaymentSuccess={handlePartialPaymentSuccess}
+      />
+      
+      {/* Edit Supplementary Order Modal */}
+      <SupplementaryOrderEditForm
+        show={showEditModal}
+        onHide={() => {
+          setShowEditModal(false);
+          setSelectedOrderForEdit(null);
+        }}
+        supplementaryOrder={selectedOrderForEdit}
+        parentOrder={parentOrders[selectedOrderForEdit?.parentOrderId]}
+        onSuccess={handleEditSuccess}
       />
     </Card>
   );

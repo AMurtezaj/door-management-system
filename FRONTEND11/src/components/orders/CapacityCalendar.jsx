@@ -426,9 +426,10 @@ const CapacityCalendar = () => {
       case 'e përfunduar':
         return <Badge bg="success">E Përfunduar</Badge>;
       case 'në proces':
+      case 'borxh': // Treat debt status as "në proces" since debt info is shown in price field
         return <Badge bg="warning">Në Proces</Badge>;
       default:
-        return <Badge bg="secondary">{order.statusi}</Badge>;
+        return <Badge bg="secondary">Në Proces</Badge>; // Default to "Në Proces" for any unknown status
     }
   };
   

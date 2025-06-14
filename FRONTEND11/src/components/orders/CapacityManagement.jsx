@@ -302,18 +302,27 @@ const CapacityManagement = () => {
   };
   
   const getStatusBadge = (order) => {
-    if (!order.OrderDetail) return <Badge bg="secondary">Pa status</Badge>;
-    
-    const status = order.OrderDetail.statusi;
-    const isPaymentDone = order.Payment?.isPaymentDone;
-    
-    switch (status) {
+    switch (order.statusi) {
       case 'e përfunduar':
         return <Badge bg="success">E Përfunduar</Badge>;
       case 'në proces':
+      case 'borxh': // Treat debt status as "në proces" since debt info is shown in price field
         return <Badge bg="warning">Në Proces</Badge>;
       default:
-        return <Badge bg="secondary">{status}</Badge>;
+        return <Badge bg="secondary">Në Proces</Badge>; // Default to "Në Proces" for any unknown status
+    }
+  };
+  
+  // Format status display - never show "borxh" since debt info is shown in price section
+  const formatStatus = (status) => {
+    switch (status) {
+      case 'në proces':
+      case 'borxh': // Treat debt status as "në proces" since debt info is shown in price section
+        return 'Në Proces';
+      case 'e përfunduar':
+        return 'E Përfunduar';
+      default:
+        return 'Në Proces'; // Default to "Në Proces" for any unknown status
     }
   };
   
@@ -924,12 +933,10 @@ const CapacityManagement = () => {
                       </Col>
                       <Col md={4} className="text-end">
                         <Badge 
-                          bg={getDayStatus(order) === 'completed' ? 'success' : 
-                              getDayStatus(order) === 'overdue' ? 'danger' : 'warning'} 
+                          bg={formatStatus(getDayStatus(order))} 
                           className="mb-2"
                         >
-                          {getDayStatus(order) === 'completed' ? 'E përfunduar' : 
-                           getDayStatus(order) === 'overdue' ? 'E vonuar' : 'E planifikuar'}
+                          {formatStatus(getDayStatus(order))}
                         </Badge>
                         <div>
                           <Button
@@ -1037,10 +1044,10 @@ const CapacityManagement = () => {
                         <strong>Statusi:</strong>
                         <Badge 
                           bg={selectedOrder.statusi === 'e përfunduar' ? 'success' : 
-                              selectedOrder.statusi === 'në proces' ? 'warning' : 'danger'} 
+                              selectedOrder.statusi === 'në proces' || selectedOrder.statusi === 'borxh' ? 'warning' : 'danger'} 
                           className="ms-2"
                         >
-                          {selectedOrder.statusi}
+                          {formatStatus(selectedOrder.statusi)}
                         </Badge>
                       </div>
                     </Col>

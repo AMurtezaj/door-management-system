@@ -548,15 +548,14 @@ const OrderForm = () => {
                     step="0.01"
                     name="cmimiTotal"
                     value={formData.cmimiTotal}
-                    onChange={handleChange}
-                    className="form-input"
+                    readOnly
+                    className="form-input calculated-field"
                     placeholder="0.00"
-                    required
                   />
                   <Form.Text className="text-muted">
                     {formData.sasia && formData.cmimiNjesite ? 
                       `${formData.sasia} × ${formData.cmimiNjesite} €` : 
-                      'Çmimi total'
+                      'Llogaritet automatikisht'
                     }
                   </Form.Text>
                 </Form.Group>
@@ -890,20 +889,34 @@ const OrderForm = () => {
           </Card.Header>
           <Card.Body className="section-body">
             <Row>
-              <Col md={4}>
+              <Col md={6}>
                 <Form.Group className="form-group mb-3">
-                  <Form.Check
-                    type="checkbox"
-                    label="💰 Pagesa e Përfunduar"
+                  <Form.Label className="form-label">
+                    <CheckCircle className="me-2" size={16} />
+                    Pagesa Përfunduar
+                  </Form.Label>
+                  <Form.Select
                     name="isPaymentDone"
-                    checked={formData.isPaymentDone}
-                    onChange={handleChange}
-                    className="custom-checkbox"
-                  />
+                    value={formData.isPaymentDone ? 'true' : 'false'}
+                    onChange={(e) => handleChange({
+                      target: {
+                        name: 'isPaymentDone',
+                        value: e.target.value === 'true',
+                        type: 'select'
+                      }
+                    })}
+                    className="form-input"
+                  >
+                    <option value="false">❌ Jo</option>
+                    <option value="true">✅ Po</option>
+                  </Form.Select>
+                  <Form.Text className="text-muted">
+                    A është pagesa përfunduar plotësisht?
+                  </Form.Text>
                 </Form.Group>
               </Col>
               
-              <Col md={4}>
+              <Col md={6}>
                 <Form.Group className="form-group mb-3">
                   <Form.Check
                     type="checkbox"

@@ -123,11 +123,12 @@ const Dashboard = () => {
   const getStatusBadge = (status) => {
     switch (status) {
       case 'në proces':
+      case 'borxh': // Treat debt status as "në proces" since debt info is shown in price field
         return <Badge bg="warning">Në Proces</Badge>;
       case 'e përfunduar':
         return <Badge bg="success">E Përfunduar</Badge>;
       default:
-        return <Badge bg="secondary">{status}</Badge>;
+        return <Badge bg="secondary">Në Proces</Badge>; // Default to "Në Proces" for any unknown status
     }
   };
 

@@ -2,18 +2,22 @@ import React, { useState, useEffect } from 'react';
 import { Container, Table, Badge, Button, Row, Col, Form, Alert, Spinner, Modal, Card } from 'react-bootstrap';
 import { format, parseISO, startOfWeek, endOfWeek, startOfMonth, endOfMonth, isWithinInterval } from 'date-fns';
 import { sq } from 'date-fns/locale';
-import { Calendar3, ArrowRepeat } from 'react-bootstrap-icons';
+import { Calendar3, ArrowRepeat, InfoCircle } from 'react-bootstrap-icons';
 import { 
   getSupplementaryOrdersByParentId, 
   updateSupplementaryOrderPaymentStatus, 
   deleteSupplementaryOrder,
-  markSupplementaryOrderAsPrinted
+  markSupplementaryOrderAsPrinted,
+  addPartialPaymentToSupplementaryOrder
 } from '../../services/supplementaryOrderService';
 import { getAllOrders } from '../../services/orderService';
 import { useAuth } from '../../context/AuthContext';
 import { generateQRData, generateQRUrl, generateFallbackQRData } from '../../utils/qrDataGenerator';
+import SupplementaryOrderEditForm from './SupplementaryOrderEditForm';
+import PartialPaymentModal from '../payments/PartialPaymentModal';
 
 const AdditionalOrdersPage = () => {
+  const { canManagePayments, canEditOrders, canDeleteOrders, isManager, user, isAuthenticated } = useAuth();
   const [supplementaryOrders, setSupplementaryOrders] = useState([]);
   const [filteredOrders, setFilteredOrders] = useState([]);
   const [parentOrders, setParentOrders] = useState([]);
@@ -28,7 +32,13 @@ const AdditionalOrdersPage = () => {
   const [customEndDate, setCustomEndDate] = useState('');
   const [sortOrder, setSortOrder] = useState('asc');
   
-  const { isAuthenticated, user } = useAuth();
+  // Edit order state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedOrderForEdit, setSelectedOrderForEdit] = useState(null);
+  
+  // Partial payment modal state
+  const [showPartialPaymentModal, setShowPartialPaymentModal] = useState(false);
+  const [selectedOrderForPayment, setSelectedOrderForPayment] = useState(null);
   
   // Fetch data on mount
   useEffect(() => {
@@ -263,6 +273,24 @@ const AdditionalOrdersPage = () => {
     }
   };
   
+  const handleEdit = (order) => {
+    setSelectedOrderForEdit(order);
+    setShowEditModal(true);
+  };
+
+  const handleEditSuccess = (updatedOrder) => {
+    // Update the order in the list
+    setSupplementaryOrders(orders => 
+      orders.map(order => 
+        order.id === updatedOrder.id ? updatedOrder : order
+      )
+    );
+    
+    // Show success message
+    setError('');
+    alert('Porosia shtesë u përditësua me sukses!');
+  };
+  
   const handlePrintInvoice = async (supplementaryOrder) => {
     try {
       const parentOrder = supplementaryOrder.parentOrderInfo;
@@ -275,6 +303,19 @@ const AdditionalOrdersPage = () => {
         } catch (error) {
           console.error('Date formatting error:', error);
           return 'N/A';
+        }
+      };
+
+      // Helper function to format status - never show "borxh"
+      const formatStatusForInvoice = (status) => {
+        switch (status) {
+          case 'në proces':
+          case 'borxh': // Treat debt status as "në proces" since debt info is shown in price section
+            return 'Në Proces';
+          case 'e përfunduar':
+            return 'E Përfunduar';
+          default:
+            return 'Në Proces'; // Default to "Në Proces" for any unknown status
         }
       };
 
@@ -643,7 +684,7 @@ const AdditionalOrdersPage = () => {
                 <p><strong>Data e Krijimit:</strong> ${safeFormatDate(supplementaryOrder.dataKrijimit)}</p>
                 <p><strong>Statusi:</strong> 
                   <span class="status-badge ${supplementaryOrder.statusi === 'e përfunduar' ? 'status-completed' : 'status-process'}">
-                    ${supplementaryOrder.statusi || 'N/A'}
+                    ${formatStatusForInvoice(supplementaryOrder.statusi)}
                   </span>
                 </p>
                 <p><strong>Marrësi i Kaparos:</strong> ${supplementaryOrder.kaparaReceiver || 'N/A'}</p>
@@ -801,11 +842,55 @@ const AdditionalOrdersPage = () => {
   const getStatusBadge = (status) => {
     switch (status) {
       case 'në proces':
+      case 'borxh': // Treat debt status as "në proces" since debt info is shown in price field
         return <Badge bg="warning">Në Proces</Badge>;
       case 'e përfunduar':
         return <Badge bg="success">E Përfunduar</Badge>;
       default:
-        return <Badge bg="secondary">{status}</Badge>;
+        return <Badge bg="secondary">Në Proces</Badge>; // Default to "Në Proces" for any unknown status
+    }
+  };
+  
+  const handlePartialPayment = (order) => {
+    setSelectedOrderForPayment(order);
+    setShowPartialPaymentModal(true);
+  };
+
+  const handlePartialPaymentSuccess = async ({ orderId, paymentAmount, paymentReceiver, isSupplementaryOrder }) => {
+    try {
+      const result = await addPartialPaymentToSupplementaryOrder(orderId, paymentAmount, paymentReceiver);
+      
+      // Update the order in the list
+      setSupplementaryOrders(orders => 
+        orders.map(order => 
+          order.id === orderId ? result.supplementaryOrder : order
+        )
+      );
+      
+      // Show success message
+      setError('');
+      alert(result.message);
+      
+    } catch (err) {
+      throw err; // Let the modal handle the error display
+    }
+  };
+
+  const handleCancelPayment = async (order) => {
+    if (!window.confirm('Jeni të sigurtë që dëshironi të anuloni pagesën për këtë porosi shtesë?')) {
+      return;
+    }
+    
+    try {
+      await updateSupplementaryOrderPaymentStatus(order.id, false);
+      
+      setSupplementaryOrders(orders => 
+        orders.map(o => 
+          o.id === order.id ? { ...o, isPaymentDone: false } : o
+        )
+      );
+    } catch (err) {
+      setError('Ka ndodhur një gabim gjatë anulimit të pagesës');
     }
   };
   
@@ -935,6 +1020,13 @@ const AdditionalOrdersPage = () => {
         </Card.Body>
       </Card>
       
+      {isManager && (
+        <Alert variant="info" className="mb-4">
+          <InfoCircle className="me-2" size={16} />
+          <strong>Njoftim për Menaxherin:</strong> Ju mund të shikoni të gjitha porositë shtesë dhe të editoni informacionet e përgjithshme, por nuk mund të fshini porosi ose menaxhoni pagesat. Informacionet financiare janë të rezervuara vetëm për administratorin.
+        </Alert>
+      )}
+      
       {error && (
         <Alert variant="danger">
           {error}
@@ -1023,21 +1115,42 @@ const AdditionalOrdersPage = () => {
               </td>
               <td>
                 <div className="d-flex gap-1 flex-wrap">
-                  {!order.isPaymentDone && (
+                  {canEditOrders && (
+                    <Button 
+                      variant="info" 
+                      size="sm" 
+                      onClick={() => handleEdit(order)}
+                    >
+                      <i className="bi bi-pencil"></i> Edito
+                    </Button>
+                  )}
+                  
+                  {!order.isPaymentDone && canManagePayments && (
                     <Button 
                       variant="success" 
                       size="sm" 
-                      onClick={() => handlePaymentUpdate(order.id, true)}
+                      onClick={() => handlePartialPayment(order)}
                     >
                       Paguaj
                     </Button>
                   )}
                   
-                  {order.isPaymentDone && (
+                  {!order.isPaymentDone && !canManagePayments && (
+                    <Button 
+                      variant="success" 
+                      size="sm" 
+                      disabled
+                      title="Vetëm administratori mund të menaxhojë pagesat"
+                    >
+                      Paguaj
+                    </Button>
+                  )}
+                  
+                  {order.isPaymentDone && canManagePayments && (
                     <Button 
                       variant="warning" 
                       size="sm" 
-                      onClick={() => handlePaymentUpdate(order.id, false)}
+                      onClick={() => handleCancelPayment(order)}
                     >
                       Anulo Pagesën
                     </Button>
@@ -1051,13 +1164,21 @@ const AdditionalOrdersPage = () => {
                     Printo
                   </Button>
                   
-                  <Button 
-                    variant="danger" 
-                    size="sm" 
-                    onClick={() => handleDelete(order.id)}
-                  >
-                    Fshi
-                  </Button>
+                  {canDeleteOrders && (
+                    <Button 
+                      variant="danger" 
+                      size="sm" 
+                      onClick={() => handleDelete(order.id)}
+                    >
+                      Fshi
+                    </Button>
+                  )}
+                  
+                  {isManager && !canDeleteOrders && (
+                    <small className="text-muted align-self-center">
+                      Editim i kufizuar
+                    </small>
+                  )}
                 </div>
               </td>
             </tr>
@@ -1088,6 +1209,29 @@ const AdditionalOrdersPage = () => {
           )}
         </tbody>
       </Table>
+      
+      {/* Edit Supplementary Order Modal */}
+      <SupplementaryOrderEditForm
+        show={showEditModal}
+        onHide={() => {
+          setShowEditModal(false);
+          setSelectedOrderForEdit(null);
+        }}
+        supplementaryOrder={selectedOrderForEdit}
+        parentOrder={selectedOrderForEdit?.parentOrderInfo}
+        onSuccess={handleEditSuccess}
+      />
+      
+      {/* Partial Payment Modal */}
+      <PartialPaymentModal
+        show={showPartialPaymentModal}
+        onHide={() => {
+          setShowPartialPaymentModal(false);
+          setSelectedOrderForPayment(null);
+        }}
+        supplementaryOrder={selectedOrderForPayment}
+        onPaymentSuccess={handlePartialPaymentSuccess}
+      />
     </Container>
   );
 };

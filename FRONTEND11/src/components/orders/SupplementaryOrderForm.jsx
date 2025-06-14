@@ -304,14 +304,25 @@ const SupplementaryOrderForm = ({ show, onHide, parentOrder, onSuccess }) => {
           <Row>
             <Col md={12}>
               <Form.Group className="mb-3">
-                <Form.Check
-                  type="checkbox"
-                  label="Pagesa e Përfunduar"
+                <Form.Label>Pagesa Përfunduar</Form.Label>
+                <Form.Select
                   name="isPaymentDone"
-                  checked={formData.isPaymentDone}
-                  onChange={handleChange}
+                  value={formData.isPaymentDone ? 'true' : 'false'}
+                  onChange={(e) => handleChange({
+                    target: {
+                      name: 'isPaymentDone',
+                      type: 'select',
+                      value: e.target.value === 'true'
+                    }
+                  })}
                   disabled={loading}
-                />
+                >
+                  <option value="false">❌ Jo</option>
+                  <option value="true">✅ Po</option>
+                </Form.Select>
+                <Form.Text className="text-muted">
+                  Zgjidhni "Po" nëse pagesa është kryer plotësisht
+                </Form.Text>
               </Form.Group>
             </Col>
           </Row>

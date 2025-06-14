@@ -433,8 +433,12 @@ const supplementaryOrderService = {
 module.exports = {
     createSupplementaryOrder: supplementaryOrderService.createSupplementaryOrder,
     getSupplementaryOrdersByParentId: supplementaryOrderService.getSupplementaryOrdersByParentId,
+    updateSupplementaryOrder: supplementaryOrderService.updateSupplementaryOrder,
     updateSupplementaryOrderPaymentStatus: supplementaryOrderService.updateSupplementaryOrderPaymentStatus,
+    updateSupplementaryOrderProductStatus: supplementaryOrderService.updateSupplementaryOrderProductStatus,
     deleteSupplementaryOrder: supplementaryOrderService.deleteSupplementaryOrder,
+    getSupplementaryOrderById: supplementaryOrderService.getSupplementaryOrderById,
+    addPartialPaymentToSupplementaryOrder: supplementaryOrderService.addPartialPaymentToSupplementaryOrder,
     addPartialPayment: supplementaryOrderService.addPartialPaymentToSupplementaryOrder,
     cancelPartialPayment: supplementaryOrderService.cancelPartialPayment,
     markAsPrinted: supplementaryOrderService.markAsPrinted

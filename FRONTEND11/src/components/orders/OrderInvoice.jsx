@@ -109,6 +109,19 @@ const OrderInvoice = forwardRef(({ order, user }, ref) => {
       parseFloat(order.gjeresia) - parseFloat(order.profiliPoshtem) : null)
   };
 
+  // Format status display - never show "borxh" since debt info is shown in price section
+  const formatStatus = (status) => {
+    switch (status) {
+      case 'në proces':
+      case 'borxh': // Treat debt status as "në proces" since debt info is shown in price section
+        return 'Në Proces';
+      case 'e përfunduar':
+        return 'E Përfunduar';
+      default:
+        return 'Në Proces'; // Default to "Në Proces" for any unknown status
+    }
+  };
+
   return (
     <div ref={ref} className="invoice-container p-4">
       <Container fluid>
@@ -129,7 +142,7 @@ const OrderInvoice = forwardRef(({ order, user }, ref) => {
                 <h1 className="mb-4">FATURË</h1>
                 <h5>Nr. i Porosisë: #{order.id}</h5>
                 <p>Data: {format(new Date(), 'dd/MM/yyyy')}</p>
-                <p>Statusi: {order.statusi}</p>
+                <p>Statusi: {formatStatus(order.statusi)}</p>
                 <p className="small text-muted">
                   Kodi i Autenticitetit: <strong>{qrData.verification.code}</strong>
                 </p>
