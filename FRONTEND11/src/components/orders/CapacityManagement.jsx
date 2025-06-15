@@ -26,7 +26,7 @@ import { getOrdersByDay } from '../../services/orderService';
 import { useAuth } from '../../context/AuthContext';
 import useOrderManagement from '../../hooks/useOrderManagement';
 import './capacity.css';
-
+//only a comment
 const CapacityManagement = () => {
   const { canManageCapacities } = useAuth();
   const [capacities, setCapacities] = useState([]);

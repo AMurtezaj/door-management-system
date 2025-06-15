@@ -1165,13 +1165,13 @@ const AdditionalOrdersPage = () => {
                   </Button>
                   
                   {canDeleteOrders && (
-                    <Button 
-                      variant="danger" 
-                      size="sm" 
-                      onClick={() => handleDelete(order.id)}
-                    >
-                      Fshi
-                    </Button>
+                  <Button 
+                    variant="danger" 
+                    size="sm" 
+                    onClick={() => handleDelete(order.id)}
+                  >
+                    Fshi
+                  </Button>
                   )}
                   
                   {isManager && !canDeleteOrders && (
