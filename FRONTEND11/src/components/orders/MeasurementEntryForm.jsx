@@ -512,21 +512,21 @@ const MeasurementEntryForm = () => {
                 <Form.Group className="form-group mb-3">
                   <Form.Label className="form-label">
                     <CurrencyEuro className="me-2" size={16} />
-                    Çmimi Total (€)
+                    Çmimi Total (€) <span className="text-muted">(Automatik)</span>
                   </Form.Label>
                   <Form.Control
                     type="number"
                     step="0.01"
                     name="cmimiTotal"
                     value={formData.cmimiTotal}
-                    onChange={handleChange}
-                    className="form-input"
+                    className="form-input calculated-field bg-light"
                     placeholder="0.00"
+                    readOnly
                   />
                   <Form.Text className="text-muted">
                     {formData.sasia && formData.cmimiNjesite ? 
-                      `${formData.sasia} × ${formData.cmimiNjesite} €` : 
-                      'Mund të shtohet më vonë'
+                      `${formData.sasia} × ${formData.cmimiNjesite} € = ${formData.cmimiTotal} €` : 
+                      'Llogaritet automatikisht nga sasia × çmimi për njësi'
                     }
                   </Form.Text>
                 </Form.Group>

@@ -511,9 +511,8 @@ export const getOverdueOrders = async () => {
  */
 export const markOrderAsCompleted = async (id, completionData = {}) => {
   try {
-    const response = await api.patch(`/orders/${id}/complete`, {
-      statusi: 'e përfunduar',
-      completedAt: new Date().toISOString(),
+    const response = await api.patch(`/orders/${id}/product-status`, {
+      statusiProduktit: 'e përfunduar',
       ...completionData
     });
     return formatOrderResponse(response.data);

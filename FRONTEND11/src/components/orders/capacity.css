@@ -1645,4 +1645,154 @@
   .dimension-value {
     font-size: 1rem;
   }
+}
+
+/* ===== ORDER SWAPPING STYLES ===== */
+
+.swap-order-card {
+  border: 1px solid #dee2e6;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.swap-order-card:hover {
+  border-color: #ffc107;
+  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.15);
+  transform: translateY(-1px);
+}
+
+.swap-btn {
+  transition: all 0.2s ease;
+}
+
+.swap-btn:hover {
+  transform: scale(1.05);
+}
+
+.capacity-status {
+  margin-bottom: 1rem;
+}
+
+.capacity-status:last-child {
+  margin-bottom: 0;
+}
+
+.capacity-status .progress {
+  border-radius: 4px;
+  background-color: #f8f9fa;
+}
+
+.capacity-status .progress-bar {
+  transition: width 0.3s ease;
+}
+
+/* Swap search input */
+.swap-orders-list .form-control {
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.swap-orders-list .form-control:focus {
+  border-color: #ffc107;
+  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.1);
+}
+
+/* Enhanced swap orders list */
+.swap-orders-list {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 0.75rem;
+  background-color: #f8f9fa;
+}
+
+/* Date badge in swap cards */
+.swap-order-card .badge {
+  font-size: 0.7rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.swap-order-card .small {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #495057;
+}
+
+/* Swap button styling */
+.btn-outline-warning.me-2 {
+  border-color: #ffc107;
+  color: #ffc107;
+}
+
+.btn-outline-warning.me-2:hover {
+  background-color: #ffc107;
+  border-color: #ffc107;
+  color: #212529;
+}
+
+/* Full capacity indicator */
+.calendar-day.is-full {
+  background: linear-gradient(135deg, rgba(220, 53, 69, 0.1) 0%, rgba(220, 53, 69, 0.05) 100%);
+  border-color: #dc3545;
+}
+
+.calendar-day.is-full:hover {
+  background: linear-gradient(135deg, rgba(220, 53, 69, 0.15) 0%, rgba(220, 53, 69, 0.1) 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.2);
+}
+
+/* Capacity progress bars */
+.progress {
+  height: 8px !important;
+  border-radius: 4px;
+  background-color: #f8f9fa;
+}
+
+.progress-bar {
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progress-bar.bg-danger {
+  background-color: #dc3545 !important;
+}
+
+.progress-bar.bg-success {
+  background-color: #28a745 !important;
+}
+
+/* Modal enhancements */
+.modern-modal-body .capacity-status {
+  font-size: 0.9rem;
+}
+
+.swap-orders-list {
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  padding: 0.5rem;
+  background-color: #f8f9fa;
+}
+
+/* Enhanced order card for swapping */
+.order-card .action-buttons .btn-outline-danger {
+  animation: pulse-danger 2s infinite;
+}
+
+@keyframes pulse-danger {
+  0% {
+    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(220, 53, 69, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 53, 69, 0);
+  }
 } 

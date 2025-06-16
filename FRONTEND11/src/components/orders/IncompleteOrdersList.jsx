@@ -12,9 +12,11 @@ const IncompleteOrdersList = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [incompleteOrders, setIncompleteOrders] = useState([]);
+  const [unmeasuredOrders, setUnmeasuredOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [unmeasuredSearchTerm, setUnmeasuredSearchTerm] = useState('');
   
   // Print modal state
   const [showPrintModal, setShowPrintModal] = useState(false);
@@ -30,7 +32,8 @@ const IncompleteOrdersList = () => {
 
   useEffect(() => {
     filterIncompleteOrders();
-  }, [orders, searchTerm]);
+    filterUnmeasuredOrders();
+  }, [orders, searchTerm, unmeasuredSearchTerm]);
   
   const fetchOrders = async () => {
     try {
@@ -48,11 +51,13 @@ const IncompleteOrdersList = () => {
     let filtered = orders.filter(order => {
       // Filter for incomplete orders using the isIncomplete flag
       // As a fallback, also check for measurement data with missing financial info
+      // Exclude orders that are marked as 'të pamatura' (they go in the unmeasured section)
       const isMarkedIncomplete = order.isIncomplete === true;
       const hasBasicMeasurementData = order.matesi && order.statusiMatjes === 'e matur';
       const missingFinancialData = !order.cmimiTotal || parseFloat(order.cmimiTotal) === 0;
+      const isUnmeasured = order.statusiMatjes === 'të pamatura';
       
-      return isMarkedIncomplete || (hasBasicMeasurementData && missingFinancialData);
+      return (isMarkedIncomplete || (hasBasicMeasurementData && missingFinancialData)) && !isUnmeasured;
     });
 
     // Apply search filter
@@ -69,6 +74,50 @@ const IncompleteOrdersList = () => {
     }
 
     setIncompleteOrders(filtered);
+  };
+
+  const filterUnmeasuredOrders = () => {
+    // Debug: Show all unique measurement statuses
+    const allStatuses = [...new Set(orders.map(o => o.statusiMatjes).filter(Boolean))];
+    console.log('All unique measurement statuses found:', allStatuses);
+    
+    let filtered = orders.filter(order => {
+      // Filter for unmeasured orders - check for different possible status variations
+      const status = order.statusiMatjes?.toLowerCase();
+      const isUnmeasured = status === 'të pamatura' || 
+                          status === 'e pamatur' || 
+                          status === 'te pamatura' || 
+                          status === 'pamatur' ||
+                          status === 'të pamatur';
+      
+      // Debug logging to see what statuses we have
+      if (order.statusiMatjes) {
+        console.log(`Order ${order.id}: statusiMatjes = "${order.statusiMatjes}"`);
+      }
+      
+      return isUnmeasured;
+    });
+
+    // Debug: Log total unmeasured orders found
+    console.log(`Found ${filtered.length} unmeasured orders`);
+    if (filtered.length > 0) {
+      console.log('Unmeasured orders:', filtered.map(o => ({ id: o.id, status: o.statusiMatjes })));
+    }
+
+    // Apply search filter
+    if (unmeasuredSearchTerm) {
+      filtered = filtered.filter(order => {
+        const customerName = `${order.emriKlientit} ${order.mbiemriKlientit}`.toLowerCase();
+        const phone = order.numriTelefonit?.toLowerCase() || '';
+        const location = order.vendi?.toLowerCase() || '';
+        
+        return customerName.includes(unmeasuredSearchTerm.toLowerCase()) ||
+               phone.includes(unmeasuredSearchTerm.toLowerCase()) ||
+               location.includes(unmeasuredSearchTerm.toLowerCase());
+      });
+    }
+
+    setUnmeasuredOrders(filtered);
   };
 
   const handleCompleteOrder = (orderId) => {
@@ -257,6 +306,157 @@ const IncompleteOrdersList = () => {
                       
                       <Button
                         variant="outline-primary"
+                        size="sm"
+                        onClick={() => handlePrintOrder(order)}
+                        title="Printo për Matës"
+                        className="d-flex align-items-center"
+                      >
+                        <i className="bi bi-printer me-1"></i>
+                        Printo
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </Card>
+      )}
+      
+      {/* Unmeasured Orders Section */}
+      <Row className="mb-4 mt-5">
+        <Col>
+          <Card className="border-0 shadow-sm">
+            <Card.Header className="bg-warning text-dark">
+              <div className="d-flex align-items-center">
+                <List className="me-2" size={24} />
+                <div>
+                  <h4 className="mb-0">Porositë e Pamatura</h4>
+                  <small>Porositë që janë shënuar si 'të pamatura' dhe duhen rimatje</small>
+                </div>
+              </div>
+            </Card.Header>
+          </Card>
+        </Col>
+      </Row>
+
+      <Alert variant="info" className="mb-4">
+        <div className="d-flex align-items-center">
+          <InfoCircle className="me-2" size={16} />
+          <div>
+            <strong>Informacion:</strong> Këto janë porositë që kanë statusin e matjes 'të pamatura'. 
+            Kur statusi i matjes ndryshohet përsëri në 'e matur', porositë do të kthehen në listën kryesore 
+            dhe do të hiqen nga kjo seksion.
+          </div>
+        </div>
+      </Alert>
+      
+      <Row className="mb-3">
+        <Col md={6}>
+          <h5 className="text-muted">
+            {unmeasuredOrders.length} porosi të pamatura
+          </h5>
+        </Col>
+        <Col md={6}>
+          <Form.Control
+            type="text"
+            placeholder="Kërko sipas emrit, telefonit ose vendndodhjes"
+            value={unmeasuredSearchTerm}
+            onChange={(e) => setUnmeasuredSearchTerm(e.target.value)}
+          />
+        </Col>
+      </Row>
+      
+      {unmeasuredOrders.length === 0 ? (
+        <Card className="text-center py-5">
+          <Card.Body>
+            <CheckCircleFill size={48} className="text-success mb-3" />
+            <h5 className="text-muted">Asnjë porosi e pamatur</h5>
+            <p className="text-muted mb-3">
+              {unmeasuredSearchTerm 
+                ? `Nuk u gjetën porosi të pamatura që përputhen me "${unmeasuredSearchTerm}"`
+                : "Nuk ka porosi me statusin 'të pamatura'"
+              }
+            </p>
+          </Card.Body>
+        </Card>
+      ) : (
+        <Card className="border-0 shadow-sm">
+          <Table responsive hover className="mb-0">
+            <thead className="table-light">
+              <tr>
+                <th>ID</th>
+                <th>Klienti</th>
+                <th>Telefoni</th>
+                <th>Vendi</th>
+                <th>Matësi</th>
+                <th>Data Matjes</th>
+                <th>Tipi</th>
+                <th>Statusi</th>
+                <th>Veprime</th>
+              </tr>
+            </thead>
+            <tbody>
+              {unmeasuredOrders.map((order) => (
+                <tr key={order.id}>
+                  <td>
+                    <strong>#{order.id}</strong>
+                  </td>
+                  <td>
+                    <div>
+                      <strong>{order.emriKlientit} {order.mbiemriKlientit}</strong>
+                    </div>
+                  </td>
+                  <td>
+                    <span className="text-muted">{order.numriTelefonit}</span>
+                  </td>
+                  <td>
+                    <span className="text-muted">{order.vendi}</span>
+                  </td>
+                  <td>
+                    <Badge bg="info" className="me-1">
+                      {order.matesi || 'N/A'}
+                    </Badge>
+                  </td>
+                  <td>
+                    {order.dataMatjes ? (
+                      <span className="text-muted">
+                        {format(new Date(order.dataMatjes), 'dd/MM/yyyy')}
+                      </span>
+                    ) : (
+                      <span className="text-muted">N/A</span>
+                    )}
+                  </td>
+                  <td>
+                    <Badge 
+                      bg={order.tipiPorosise === 'derë garazhi' ? 'primary' : 
+                         order.tipiPorosise === 'derë garazhi + kapak' ? 'success' : 'secondary'}
+                      className="me-1"
+                    >
+                      {order.tipiPorosise === 'derë garazhi' ? '🏠 Derë Garazhi' : 
+                       order.tipiPorosise === 'derë garazhi + kapak' ? '🏠🔧 Derë Garazhi + Kapgjik' : '🔧 Kapgjik'}
+                    </Badge>
+                  </td>
+                  <td>
+                    <Badge bg="warning" className="me-2">
+                      📏 Të pamatura
+                    </Badge>
+                  </td>
+                  <td>
+                    <div className="d-flex gap-2">
+                      <Button
+                        variant="outline-primary"
+                        size="sm"
+                        onClick={() => navigate(`/orders/edit/${order.id}`)}
+                        className="d-flex align-items-center"
+                        title="Redakto Porosinë"
+                      >
+                        <PencilSquare className="me-1" size={14} />
+                        Redakto
+                      </Button>
+                      
+                      <Button
+                        variant="outline-info"
                         size="sm"
                         onClick={() => handlePrintOrder(order)}
                         title="Printo për Matës"

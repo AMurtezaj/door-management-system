@@ -64,6 +64,8 @@ const OrderEdit = () => {
     shitesi: '',
     matesi: '',
     dataMatjes: '',
+    sasia: 1,
+    cmimiNjesite: '',
     cmimiTotal: '',
     kaparja: '0',
     kaparaReceiver: '',
@@ -89,7 +91,7 @@ const OrderEdit = () => {
 
   // Calculate form completion percentage
   const calculateProgress = () => {
-    const requiredFields = ['emriKlientit', 'mbiemriKlientit', 'numriTelefonit', 'vendi', 'shitesi', 'cmimiTotal', 'dita'];
+    const requiredFields = ['emriKlientit', 'mbiemriKlientit', 'numriTelefonit', 'vendi', 'shitesi', 'sasia', 'dita'];
     const filledFields = requiredFields.filter(field => formData[field] && formData[field].toString().trim() !== '');
     return Math.round((filledFields.length / requiredFields.length) * 100);
   };
@@ -133,6 +135,36 @@ const OrderEdit = () => {
     
     fetchData();
   }, [id]);
+  
+  // Calculate total price when unit price or quantity changes
+  useEffect(() => {
+    if (formData.cmimiNjesite && formData.sasia) {
+      const unitPrice = parseFloat(formData.cmimiNjesite);
+      const quantity = parseInt(formData.sasia);
+      if (!isNaN(unitPrice) && !isNaN(quantity) && unitPrice > 0 && quantity > 0) {
+        const totalPrice = (unitPrice * quantity).toFixed(2);
+        setFormData(prev => ({
+          ...prev,
+          cmimiTotal: totalPrice
+        }));
+      }
+    }
+  }, [formData.cmimiNjesite, formData.sasia]);
+
+  // Calculate unit price when total price or quantity changes (if unit price is empty)
+  useEffect(() => {
+    if (formData.cmimiTotal && formData.sasia && !formData.cmimiNjesite) {
+      const totalPrice = parseFloat(formData.cmimiTotal);
+      const quantity = parseInt(formData.sasia);
+      if (!isNaN(totalPrice) && !isNaN(quantity) && totalPrice > 0 && quantity > 0) {
+        const unitPrice = (totalPrice / quantity).toFixed(2);
+        setFormData(prev => ({
+          ...prev,
+          cmimiNjesite: unitPrice
+        }));
+      }
+    }
+  }, [formData.cmimiTotal, formData.sasia]);
   
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -594,27 +626,76 @@ const OrderEdit = () => {
               </Alert>
             )}
             <Row>
-              <Col md={4}>
+              <Col md={3}>
+                <Form.Group className="form-group mb-3">
+                  <Form.Label className="form-label">
+                    <List className="me-2" size={16} />
+                    Sasia <span className="required">*</span>
+                  </Form.Label>
+                  <Form.Control
+                    type="number"
+                    min="1"
+                    name="sasia"
+                    value={formData.sasia}
+                    onChange={handleChange}
+                    className={`form-input ${isManager ? 'bg-light' : ''}`}
+                    placeholder="1"
+                    required
+                    readOnly={isManager}
+                  />
+                  <Form.Text className="text-muted">
+                    Numri i produkteve
+                  </Form.Text>
+                </Form.Group>
+              </Col>
+              
+              <Col md={3}>
                 <Form.Group className="form-group mb-3">
                   <Form.Label className="form-label">
                     <CurrencyEuro className="me-2" size={16} />
-                    Çmimi Total <span className="required">*</span>
+                    Çmimi për Njësi (€)
+                  </Form.Label>
+                  <Form.Control
+                    type="number"
+                    step="0.01"
+                    name="cmimiNjesite"
+                    value={formData.cmimiNjesite}
+                    onChange={handleChange}
+                    className={`form-input ${isManager ? 'bg-light' : ''}`}
+                    placeholder="0.00"
+                    readOnly={isManager}
+                  />
+                  <Form.Text className="text-muted">
+                    Çmimi për një produkt
+                  </Form.Text>
+                </Form.Group>
+              </Col>
+              
+              <Col md={3}>
+                <Form.Group className="form-group mb-3">
+                  <Form.Label className="form-label">
+                    <CurrencyEuro className="me-2" size={16} />
+                    Çmimi Total (Automatik)
                   </Form.Label>
                   <Form.Control
                     type="number"
                     step="0.01"
                     name="cmimiTotal"
                     value={formData.cmimiTotal}
-                    onChange={handleChange}
-                    className={`form-input ${isManager ? 'bg-light' : ''}`}
+                    className="form-input calculated-field bg-light"
                     placeholder="0.00"
-                    required
-                    readOnly={isManager}
+                    readOnly
                   />
+                  <Form.Text className="text-muted">
+                    {formData.sasia && formData.cmimiNjesite ? 
+                      `${formData.sasia} × ${formData.cmimiNjesite} € = ${formData.cmimiTotal} €` : 
+                      'Llogaritet automatikisht nga sasia × çmimi për njësi'
+                    }
+                  </Form.Text>
                 </Form.Group>
               </Col>
               
-              <Col md={4}>
+              <Col md={3}>
                 <Form.Group className="form-group mb-3">
                   <Form.Label className="form-label">
                     <CurrencyEuro className="me-2" size={16} />
@@ -632,7 +713,9 @@ const OrderEdit = () => {
                   />
                 </Form.Group>
               </Col>
-              
+            </Row>
+            
+            <Row>
               <Col md={4}>
                 <Form.Group className="form-group mb-3">
                   <Form.Label className="form-label">
@@ -648,10 +731,8 @@ const OrderEdit = () => {
                   />
                 </Form.Group>
               </Col>
-            </Row>
-            
-            <Row>
-              <Col md={6}>
+              
+              <Col md={4}>
                 <Form.Group className="form-group mb-3">
                   <Form.Label className="form-label">
                     <People className="me-2" size={16} />
@@ -669,7 +750,7 @@ const OrderEdit = () => {
                 </Form.Group>
               </Col>
               
-              <Col md={6}>
+              <Col md={4}>
                 <Form.Group className="form-group mb-3">
                   <Form.Label className="form-label">
                     <CreditCard className="me-2" size={16} />
@@ -686,6 +767,36 @@ const OrderEdit = () => {
                     <option value="kesh">💵 Kesh</option>
                     <option value="banke">🏦 Bankë</option>
                   </Form.Select>
+                </Form.Group>
+              </Col>
+            </Row>
+            
+            <Row>
+              <Col md={6}>
+                <Form.Group className="form-group mb-3">
+                  <Form.Label className="form-label">
+                    <CheckCircle className="me-2" size={16} />
+                    Pagesa Përfunduar
+                  </Form.Label>
+                  <Form.Select
+                    name="isPaymentDone"
+                    value={formData.isPaymentDone ? 'true' : 'false'}
+                    onChange={(e) => handleChange({
+                      target: {
+                        name: 'isPaymentDone',
+                        value: e.target.value === 'true',
+                        type: 'select'
+                      }
+                    })}
+                    className={`form-input ${isManager ? 'bg-light' : ''}`}
+                    disabled={isManager}
+                  >
+                    <option value="false">❌ Jo - E Papaguar</option>
+                    <option value="true">✅ Po - E Paguar</option>
+                  </Form.Select>
+                  <Form.Text className="text-muted">
+                    A është pagesa përfunduar plotësisht?
+                  </Form.Text>
                 </Form.Group>
               </Col>
             </Row>
@@ -969,19 +1080,6 @@ const OrderEdit = () => {
           </Card.Header>
           <Card.Body className="section-body">
             <Row>
-              <Col md={4}>
-                <Form.Group className="form-group mb-3">
-                  <Form.Check
-                    type="checkbox"
-                    label="💰 Pagesa e Përfunduar"
-                    name="isPaymentDone"
-                    checked={formData.isPaymentDone}
-                    onChange={handleChange}
-                    className="custom-checkbox"
-                  />
-                </Form.Group>
-              </Col>
-              
               <Col md={4}>
                 <Form.Group className="form-group mb-3">
                   <Form.Check
